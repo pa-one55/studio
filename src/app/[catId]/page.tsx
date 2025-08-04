@@ -1,11 +1,10 @@
-import { MOCK_CATS } from '@/lib/data';
-import type { Cat } from '@/lib/types';
+import { MOCK_CATS, MOCK_USERS } from '@/lib/data';
+import type { Cat, User } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { MapPin, ExternalLink, Calendar, User } from 'lucide-react';
+import { MapPin, ExternalLink, Calendar, User as UserIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -21,6 +20,14 @@ export default function CatProfilePage({ params }: { params: { catId: string } }
   if (!cat) {
     notFound();
   }
+  
+  const lister: User | undefined = MOCK_USERS.find((u) => u.id === cat.listerId);
+
+  if (!lister) {
+    // Or handle this case more gracefully
+    notFound();
+  }
+
 
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${cat.lat},${cat.lng}`;
 
@@ -64,11 +71,11 @@ export default function CatProfilePage({ params }: { params: { catId: string } }
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
+                            <UserIcon className="h-4 w-4 text-muted-foreground" />
                              <div>
                                 <p className="font-semibold">Listed By</p>
-                                <Link href={cat.lister.profileUrl} className="text-muted-foreground hover:text-primary underline">
-                                    {cat.lister.name}
+                                <Link href={`/profile/${lister.id}`} className="text-muted-foreground hover:text-primary underline">
+                                    {lister.name}
                                 </Link>
                             </div>
                         </div>

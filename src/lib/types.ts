@@ -1,3 +1,14 @@
+export interface User {
+  id: string;
+  name: string;
+  imageUrl: string;
+  socials: {
+    twitter?: string;
+    github?: string;
+    linkedin?: string;
+  };
+}
+
 export interface Cat {
   id: string;
   name?: string;
@@ -7,8 +18,5 @@ export interface Cat {
   lat: number;
   lng: number;
   listedDate: string;
-  lister: {
-    name: string;
-    profileUrl: string;
-  };
+  listerId: string;
 }

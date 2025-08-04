@@ -1,4 +1,48 @@
-import type { Cat } from './types';
+import type { Cat, User } from './types';
+
+export const MOCK_USERS: User[] = [
+    {
+        id: 'user-1',
+        name: 'Alice',
+        imageUrl: 'https://placehold.co/200x200.png',
+        socials: {
+            twitter: '#',
+            github: '#',
+            linkedin: '#',
+        }
+    },
+    {
+        id: 'user-2',
+        name: 'Bob',
+        imageUrl: 'https://placehold.co/200x200.png',
+        socials: {
+            twitter: '#',
+        }
+    },
+    {
+        id: 'user-3',
+        name: 'Charlie',
+        imageUrl: 'https://placehold.co/200x200.png',
+        socials: {
+            github: '#',
+        }
+    },
+    {
+        id: 'user-4',
+        name: 'David',
+        imageUrl: 'https://placehold.co/200x200.png',
+        socials: {
+            linkedin: '#',
+        }
+    },
+    {
+        id: 'user-5',
+        name: 'Eve',
+        imageUrl: 'https://placehold.co/200x200.png',
+        socials: {}
+    }
+];
+
 
 export const MOCK_CATS: Cat[] = [
   {
@@ -10,7 +54,7 @@ export const MOCK_CATS: Cat[] = [
     lat: 34.0522,
     lng: -118.2437,
     listedDate: '2024-05-15T10:00:00Z',
-    lister: { name: 'Alice', profileUrl: '/about' }
+    listerId: 'user-1'
   },
   {
     id: '2',
@@ -21,7 +65,7 @@ export const MOCK_CATS: Cat[] = [
     lat: 34.0542,
     lng: -118.2457,
     listedDate: '2024-05-14T14:30:00Z',
-    lister: { name: 'Bob', profileUrl: '/about' }
+    listerId: 'user-2'
   },
   {
     id: '3',
@@ -31,7 +75,7 @@ export const MOCK_CATS: Cat[] = [
     lat: 34.0500,
     lng: -118.2411,
     listedDate: '2024-05-14T18:00:00Z',
-    lister: { name: 'Charlie', profileUrl: '/about' }
+    listerId: 'user-3'
   },
   {
     id: '4',
@@ -42,7 +86,7 @@ export const MOCK_CATS: Cat[] = [
     lat: 34.0566,
     lng: -118.2405,
     listedDate: '2024-05-13T11:20:00Z',
-    lister: { name: 'Alice', profileUrl: '/about' }
+    listerId: 'user-1'
   },
   {
     id: '5',
@@ -52,7 +96,7 @@ export const MOCK_CATS: Cat[] = [
     lat: 34.0488,
     lng: -118.2501,
     listedDate: '2024-05-12T09:00:00Z',
-    lister: { name: 'David', profileUrl: '/about' }
+    listerId: 'user-4'
   },
   {
     id: '6',
@@ -63,6 +107,6 @@ export const MOCK_CATS: Cat[] = [
     lat: 34.0515,
     lng: -118.2399,
     listedDate: '2024-05-11T20:00:00Z',
-    lister: { name: 'Eve', profileUrl: '/about' }
+    listerId: 'user-5'
   },
 ];
