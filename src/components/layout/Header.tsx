@@ -11,6 +11,8 @@ import { Menu } from 'lucide-react';
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/submit-cat', label: 'Submit Cat' },
+  { href: '/about', label: 'About' },
+  { href: '/donate', label: 'Donate' },
 ];
 
 export function Header() {

@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { handleSubmitCat } from '@/app/submit-cat/actions';
 import Image from 'next/image';
-import { Loader2, UploadCloud } from 'lucide-react';
+import { Loader2, UploadCloud, MapPin } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
@@ -29,10 +29,12 @@ const formSchema = z.object({
     message: 'Description cannot exceed 500 characters.',
   }),
   locationDescription: z.string().min(10, {
-    message: 'Location must be at least 10 characters.',
+    message: 'Location description must be at least 10 characters.',
   }).max(200, {
-    message: 'Location cannot exceed 200 characters.',
+    message: 'Location description cannot exceed 200 characters.',
   }),
+  lat: z.coerce.number().min(-90, 'Invalid latitude').max(90, 'Invalid latitude'),
+  lng: z.coerce.number().min(-180, 'Invalid longitude').max(180, 'Invalid longitude'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -77,10 +79,11 @@ export function SubmitCatForm() {
     setIsSubmitting(true);
     try {
       const photoDataUri = await fileToDataUri(values.photo[0]);
+      // In a real app, you would pass lat/lng to handleSubmitCat
       const result = await handleSubmitCat({
         photoDataUri,
         catDescription: values.catDescription,
-        locationDescription: values.locationDescription,
+        locationDescription: `${values.locationDescription} (at ${values.lat}, ${values.lng})`,
       }, force);
 
       if (result.isDuplicate && !force) {
@@ -173,7 +176,7 @@ export function SubmitCatForm() {
             name="locationDescription"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location Found</FormLabel>
+                <FormLabel>Location Description</FormLabel>
                 <FormControl>
                   <Textarea placeholder="e.g., Found near the playground at Central Park, around 5 PM." {...field} rows={2} />
                 </FormControl>
@@ -182,6 +185,44 @@ export function SubmitCatForm() {
               </FormItem>
             )}
           />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <FormField
+                control={form.control}
+                name="lat"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Latitude</FormLabel>
+                    <FormControl>
+                    <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input type="number" placeholder="e.g., 34.0522" {...field} className="pl-10" />
+                    </div>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="lng"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Longitude</FormLabel>
+                    <FormControl>
+                    <div className="relative">
+                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input type="number" placeholder="e.g., -118.2437" {...field} className="pl-10" />
+                    </div>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+          </div>
+            <FormDescription>
+              You can get coordinates from Google Maps by right-clicking on a location.
+            </FormDescription>
 
           <Button type="submit" disabled={isSubmitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
