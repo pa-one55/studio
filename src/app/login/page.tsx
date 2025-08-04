@@ -8,33 +8,55 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 
 export default function LoginPage() {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+
+  const auth = getAuth(app);
+  
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          toast({
+            title: 'Login Successful',
+            description: 'You have successfully logged in.',
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Google login error:", error);
+        toast({
+          variant: "destructive",
+          title: 'Login Failed',
+          description: error.message,
+        });
+      }).finally(() => {
+        setIsLoading(false);
+      });
+  }, [auth, toast]);
+
 
   const handleGoogleLogin = async () => {
-    const auth = getAuth(app);
+    setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      toast({
-        title: 'Login Successful',
-        description: 'You have successfully logged in with Google.',
-      });
-      // In a real app, you would redirect the user or update the UI state
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      toast({
-        variant: "destructive",
-        title: 'Login Failed',
-        description: 'Please ensure your Firebase project has the correct authorized domains configured.',
-      });
-    }
+    await signInWithRedirect(auth, provider);
   };
+
+  if (isLoading) {
+    return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+    )
+  }
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-12rem)] py-12 px-4">
