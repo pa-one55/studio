@@ -6,4 +6,9 @@ export interface Cat {
   location: string;
   lat: number;
   lng: number;
+  listedDate: string;
+  lister: {
+    name: string;
+    profileUrl: string;
+  };
 }

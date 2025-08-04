@@ -9,6 +9,8 @@ export const MOCK_CATS: Cat[] = [
     location: 'Central Park, Springfield',
     lat: 34.0522,
     lng: -118.2437,
+    listedDate: '2024-05-15T10:00:00Z',
+    lister: { name: 'Alice', profileUrl: '/about' }
   },
   {
     id: '2',
@@ -18,6 +20,8 @@ export const MOCK_CATS: Cat[] = [
     location: 'Maple Street, Springfield',
     lat: 34.0542,
     lng: -118.2457,
+    listedDate: '2024-05-14T14:30:00Z',
+    lister: { name: 'Bob', profileUrl: '/about' }
   },
   {
     id: '3',
@@ -26,6 +30,8 @@ export const MOCK_CATS: Cat[] = [
     location: '3rd Avenue, Springfield',
     lat: 34.0500,
     lng: -118.2411,
+    listedDate: '2024-05-14T18:00:00Z',
+    lister: { name: 'Charlie', profileUrl: '/about' }
   },
   {
     id: '4',
@@ -35,6 +41,8 @@ export const MOCK_CATS: Cat[] = [
     location: 'Downtown Library, Springfield',
     lat: 34.0566,
     lng: -118.2405,
+    listedDate: '2024-05-13T11:20:00Z',
+    lister: { name: 'Alice', profileUrl: '/about' }
   },
   {
     id: '5',
@@ -43,6 +51,8 @@ export const MOCK_CATS: Cat[] = [
     location: 'Community Garden, Springfield',
     lat: 34.0488,
     lng: -118.2501,
+    listedDate: '2024-05-12T09:00:00Z',
+    lister: { name: 'David', profileUrl: '/about' }
   },
   {
     id: '6',
@@ -52,5 +62,7 @@ export const MOCK_CATS: Cat[] = [
     location: 'Riverwalk, Springfield',
     lat: 34.0515,
     lng: -118.2399,
+    listedDate: '2024-05-11T20:00:00Z',
+    lister: { name: 'Eve', profileUrl: '/about' }
   },
 ];
