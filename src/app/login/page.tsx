@@ -20,11 +20,6 @@ export default function LoginPage() {
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
     try {
-      // Explicitly setting the authDomain for the popup operation.
-      auth.tenantId = null; // Required when setting authDomain directly on some versions
-      provider.setCustomParameters({
-        'auth_domain': process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-      });
       await signInWithPopup(auth, provider);
       toast({
         title: 'Login Successful',
@@ -36,7 +31,7 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: 'Login Failed',
-        description: error.message,
+        description: 'Please ensure your Firebase project has the correct authorized domains configured.',
       });
     }
   };
