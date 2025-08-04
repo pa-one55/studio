@@ -13,7 +13,7 @@ export function CatCard({ cat }: CatCardProps) {
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="p-0">
-        <Link href={`/${cat.id}`} className="block">
+        <Link href={`/cat/${cat.id}`} className="block">
           <div className="aspect-video overflow-hidden">
             <Image
               src={cat.imageUrl}
@@ -28,7 +28,7 @@ export function CatCard({ cat }: CatCardProps) {
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <CardTitle className="text-xl font-headline mb-2">
-            <Link href={`/${cat.id}`} className="hover:text-primary transition-colors">{cat.name || 'Unnamed Cat'}</Link>
+            <Link href={`/cat/${cat.id}`} className="hover:text-primary transition-colors">{cat.name || 'Unnamed Cat'}</Link>
         </CardTitle>
         <p className="text-sm text-muted-foreground line-clamp-3">{cat.description}</p>
       </CardContent>
@@ -38,7 +38,7 @@ export function CatCard({ cat }: CatCardProps) {
           <span>{cat.location}</span>
         </div>
         <Button asChild className="w-full" variant="outline">
-          <Link href={`/${cat.id}`}>View Details</Link>
+          <Link href={`/cat/${cat.id}`}>View Details</Link>
         </Button>
       </CardFooter>
     </Card>

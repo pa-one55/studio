@@ -19,7 +19,7 @@ export default function Home() {
         <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
           <Link href="/submit-cat">
             <PlusCircle className="mr-2 h-5 w-5" />
-            Submit a Found Cat
+            List a cat
           </Link>
         </Button>
       </div>
