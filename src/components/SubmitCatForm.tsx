@@ -103,7 +103,7 @@ export function SubmitCatForm() {
         })
       },
       (error) => {
-        setLocationError(`Error: ${error.message}. Please enable location permissions in your browser.`);
+        setLocationError(`Error: ${error.message}. Please enable location permissions in your browser or enter the location manually.`);
         setIsFetchingLocation(false);
       }
     );
@@ -187,7 +187,7 @@ export function SubmitCatForm() {
                         </label>
                     </div>
                 </FormControl>
-                <FormDescription>A clear photo helps immensely in identifying the cat.</FormDescription>
+                <FormDescription>A clear photo helps immensely in identifying the stray cat.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -202,7 +202,7 @@ export function SubmitCatForm() {
                 <FormControl>
                   <Input placeholder="e.g., Mittens" {...field} />
                 </FormControl>
-                <FormDescription>If you've given the cat a temporary name, enter it here.</FormDescription>
+                <FormDescription>If you've given the stray cat a temporary name, enter it here.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -213,7 +213,7 @@ export function SubmitCatForm() {
             name="catDescription"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Cat Description</FormLabel>
+                <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Textarea placeholder="e.g., Small ginger tabby, very friendly, found near the park entrance." {...field} rows={4} />
                 </FormControl>
@@ -228,8 +228,8 @@ export function SubmitCatForm() {
             name="location"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormDescription>Click the button to record the location where you found the cat.</FormDescription>
+                <FormLabel>Location Found</FormLabel>
+                <FormDescription>Click the button to automatically record the location where you found the cat.</FormDescription>
                 <FormControl>
                     <Button type="button" variant="outline" className="w-full" onClick={handleGetLocation} disabled={isFetchingLocation}>
                         {isFetchingLocation ? (
@@ -243,7 +243,7 @@ export function SubmitCatForm() {
                 {field.value && !isFetchingLocation && (
                     <div className="flex items-center p-3 text-sm text-emerald-600 bg-emerald-50 rounded-md">
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Location captured successfully!
+                        Location captured: {field.value}
                     </div>
                 )}
                 {locationError && (

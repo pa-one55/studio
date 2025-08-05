@@ -25,7 +25,7 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
         <div className="aspect-video md:aspect-square">
           <Image
             src={cat.imageUrl}
-            alt={cat.name || 'Found cat'}
+            alt={cat.name || 'Stray cat'}
             width={800}
             height={800}
             className="rounded-lg object-cover w-full h-full shadow-lg"
@@ -74,7 +74,7 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
                 </div>
 
                 <div>
-                     <h2 className="text-lg font-semibold mb-2 font-headline">Last Known Location</h2>
+                     <h2 className="text-lg font-semibold mb-2 font-headline">Location Found</h2>
                       <Button asChild className="w-full">
                         <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
                             <MapPin className="mr-2" /> View on Google Maps

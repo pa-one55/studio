@@ -1,20 +1,19 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow anyone to read cat and user profiles
+    // Allow users to read and write their own user document
     match /users/{userId} {
-      allow read: if true;
-      // Allow a user to create their own profile.
-      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId;
     }
 
+    // Allow anyone to read cat listings
     match /cats/{catId} {
       allow read: if true;
-      // Allow any authenticated user to create a new cat listing.
-      // The listerId must match the UID of the user making the request.
-      allow create: if request.auth != null && request.resource.data.listerId == request.auth.uid;
+      // Allow any authenticated user to create a new cat listing
+      allow create: if request.auth != null;
+      // Only allow the original lister to update or delete their listing
+      allow update, delete: if request.auth.uid == resource.data.listerId;
     }
   }
 }
