@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, UserCredential } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, type UserCredential } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { addUser } from '@/lib/firebase/firestore';
+import { addUser, getUser } from '@/lib/firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterEmailPage() {
@@ -22,38 +22,49 @@ export default function RegisterEmailPage() {
   const auth = getAuth(app);
   const router = useRouter();
 
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result: UserCredential | null) => {
+   useEffect(() => {
+    const processRedirectResult = async () => {
+      try {
+        const result: UserCredential | null = await getRedirectResult(auth);
+        
         if (result) {
-           const firebaseUser = result.user;
-          // Create a new user in Firestore
-          await addUser({
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Anonymous',
-            email: firebaseUser.email || '',
-            imageUrl: firebaseUser.photoURL || 'https://placehold.co/128x128.png',
-            friends: [],
-            socials: {},
-          });
-          toast({
-            title: 'Sign Up Successful',
-            description: 'You have successfully signed up with Google.',
-          });
+          const firebaseUser = result.user;
+          const existingUser = await getUser(firebaseUser.uid);
+          
+          if (!existingUser) {
+            await addUser({
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'Anonymous',
+              email: firebaseUser.email || '',
+              imageUrl: firebaseUser.photoURL || 'https://placehold.co/128x128.png',
+              friends: [],
+              socials: {},
+            });
+            toast({
+              title: 'Sign Up Successful',
+              description: 'You have successfully signed up with Google.',
+            });
+          } else {
+             toast({
+              title: 'Welcome Back!',
+              description: 'You have successfully signed in.',
+            });
+          }
           router.push('/');
         }
-      })
-      .catch((error) => {
+      } catch (error: any) {
         console.error("Google sign up error:", error);
         toast({
           variant: "destructive",
           title: 'Sign Up Failed',
           description: error.message,
         });
-      })
-      .finally(() => {
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
+
+    processRedirectResult();
   }, [auth, toast, router]);
 
   const handleGoogleSignUp = async () => {
