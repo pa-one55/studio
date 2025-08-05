@@ -1,12 +1,15 @@
 
 'use client';
 
+// This file contains client-side logic that runs in the user's browser.
+// Logs from this file will appear in the BROWSER'S developer console, not the terminal.
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, type UserCredential } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast'; // used to show small pop-up notifications to the user (like "Sign up successful" or "An error occurred").
 import { useEffect, useState } from 'react';
@@ -23,65 +26,79 @@ export default function RegisterPage() {
 
   // iske niche ka console.log sirf browser me dikhega
   useEffect(() => {
-    const processRedirectResult = async () => {
-      console.log("RegisterPage: useEffect triggered. Checking for redirect result...");
-      try {
-        const result: UserCredential | null = await getRedirectResult(auth);
-        console.log("RegisterPage: Redirect result received:", result);
+    console.log("BROWSER LOG: useEffect started. Setting up onAuthStateChanged listener...");
+    
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("BROWSER LOG: onAuthStateChanged triggered. User:", firebaseUser);
 
-        if (result) {
-          console.log("RegisterPage: Google sign-up redirect successful.", result.user);
-          const firebaseUser = result.user;
+      if (firebaseUser) {
+        // A user is logged in.
+        setIsLoading(true); // Show loader while we check the database.
+        console.log("BROWSER LOG: User detected with UID:", firebaseUser.uid);
+        
+        try {
           const existingUser = await getUser(firebaseUser.uid);
-          
+
           if (!existingUser) {
-            console.log("RegisterPage: New user detected. Creating user document...");
+            // This is a new user, create their document in Firestore.
+            console.log("BROWSER LOG: New user. Creating Firestore document...");
             await addUser({
               id: firebaseUser.uid,
-              name: firebaseUser.displayName || 'Anonymous',
+              name: firebaseUser.displayName || 'Anonymous User',
               email: firebaseUser.email || '',
               imageUrl: firebaseUser.photoURL || 'https://placehold.co/128x128.png',
               friends: [],
               socials: {},
             });
-            console.log("RegisterPage: User document created successfully.");
+            console.log("BROWSER LOG: User document created successfully.");
             toast({
               title: 'Sign Up Successful',
               description: 'Welcome! Your account has been created.',
             });
           } else {
-            console.log("RegisterPage: Existing user detected.");
-            toast({
+            // This user already exists in Firestore.
+            console.log("BROWSER LOG: Existing user found. Not creating a new document.");
+             toast({
               title: 'Welcome Back!',
-              description: 'You have successfully signed in.',
+              description: 'You are already signed in.',
             });
           }
+          
+          // Redirect to the homepage.
+          console.log("BROWSER LOG: Redirecting to homepage...");
           router.push('/');
-        } else {
-            console.log("RegisterPage: No redirect result found.");
-            setIsLoading(false);
+
+        } catch (error) {
+          console.error("BROWSER LOG: Error during database operation:", error);
+          toast({ variant: "destructive", title: 'Error', description: 'Failed to set up your account.' });
+          setIsLoading(false); // Stop loading on error
         }
-      } catch (error: any) {
-        console.error("RegisterPage: Google sign up redirect error:", error);
-        toast({
-          variant: "destructive",
-          title: 'Sign Up Failed',
-          description: error.message,
-        });
+
+      } else {
+        // No user is logged in. Show the registration page.
+        console.log("BROWSER LOG: No user is signed in. Ready for registration attempt.");
         setIsLoading(false);
       }
-    };
-    
-    processRedirectResult();
-  }, [auth, toast, router]);
+    });
 
+    // Cleanup function: remove the listener when the component unmounts.
+    return () => {
+      console.log("BROWSER LOG: Cleaning up onAuthStateChanged listener.");
+      unsubscribe();
+    };
+  }, [auth, router, toast]);
+
+  // This function is called when the user clicks the "Sign up with Google" button.
   const handleGoogleSignUp = async () => {
-    console.log("RegisterPage: handleGoogleSignUp called.");
-    setIsLoading(true);
+    console.log("BROWSER LOG: 'Sign up with Google' button clicked.");
+    setIsLoading(true); // Show the loading spinner
     const provider = new GoogleAuthProvider();
+    // This will redirect the user to Google's sign-in page.
+    // After they sign in, they will be redirected back here, and the onAuthStateChanged listener will fire.
     await signInWithRedirect(auth, provider);
   };
 
+  // While we are waiting for onAuthStateChanged to give us a status, show a loading spinner.
   if (isLoading) {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">
@@ -91,6 +108,7 @@ export default function RegisterPage() {
     )
   }
 
+  // If not loading, show the actual page content.
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-12rem)] py-12 px-4">
       <Card className="mx-auto max-w-sm w-full">
