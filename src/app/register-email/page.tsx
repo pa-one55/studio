@@ -105,12 +105,16 @@ export default function RegisterEmailPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
+      const firstName = values.firstName || 'User';
+      const lastName = values.lastName || '';
+      
+      const userImage = `https://placehold.co/128x128.png?text=${firstName.charAt(0)}${lastName ? lastName.charAt(0) : ''}`;
 
       await addUser({
         id: firebaseUser.uid,
-        name: `${values.firstName} ${values.lastName}`,
+        name: `${firstName} ${lastName}`.trim(),
         email: firebaseUser.email || '',
-        imageUrl: `https://placehold.co/128x128.png?text=${values.firstName.charAt(0)}${values.lastName.charAt(0)}`,
+        imageUrl: userImage,
         friends: [],
         socials: {},
       });
