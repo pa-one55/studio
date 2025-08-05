@@ -53,6 +53,7 @@ export default function RegisterEmailPage() {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            <span className="sr-only">Loading...</span>
         </div>
     )
   }

@@ -14,4 +14,6 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const app = !getApps().length && process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? initializeApp(firebaseConfig) : getApp();
+
+export { app };

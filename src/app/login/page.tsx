@@ -29,6 +29,7 @@ export default function LoginPage() {
             title: 'Login Successful',
             description: 'You have successfully logged in.',
           });
+          // Potentially redirect user to dashboard
         }
       })
       .catch((error) => {
@@ -54,6 +55,7 @@ export default function LoginPage() {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            <span className="sr-only">Loading...</span>
         </div>
     )
   }
