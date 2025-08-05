@@ -1,3 +1,4 @@
+
 'use server';
 
 import { checkDuplicateCats } from '@/ai/flows/check-duplicate-cats.ts';
@@ -26,7 +27,10 @@ export async function handleSubmitCat(
   },
   force: boolean = false
 ): Promise<FormState> {
+  console.log("handleSubmitCat action started. Input:", { ...input, photoDataUri: '...omitted...' }, "Force:", force);
+
   if (!input.listerId) {
+     console.error("handleSubmitCat: Error - No listerId provided.");
      return {
       isDuplicate: false,
       duplicateExplanation: '',
@@ -36,14 +40,17 @@ export async function handleSubmitCat(
   }
 
   if (!force) {
+    console.log("handleSubmitCat: Performing AI duplicate check...");
     try {
       const duplicateResult = await checkDuplicateCats({
         photoDataUri: input.photoDataUri,
         catDescription: input.catDescription,
         locationDescription: input.locationDescription,
       });
+      console.log("handleSubmitCat: AI check result:", duplicateResult);
 
       if (duplicateResult.isDuplicate) {
+        console.log("handleSubmitCat: Potential duplicate found.");
         return {
           isDuplicate: true,
           duplicateExplanation: duplicateResult.duplicateExplanation,
@@ -51,11 +58,15 @@ export async function handleSubmitCat(
         };
       }
     } catch (error) {
-      console.error('AI check failed:', error);
+      console.error('handleSubmitCat: AI check failed:', error);
+      // We can choose to continue without the AI check if it fails
     }
+  } else {
+    console.log("handleSubmitCat: Skipping AI duplicate check because force is true.");
   }
 
   try {
+    console.log("handleSubmitCat: Adding cat to database...");
     const newCatId = await addCat({
       name: input.name,
       description: input.catDescription,
@@ -65,10 +76,11 @@ export async function handleSubmitCat(
       listedDate: new Date(),
     });
 
-    console.log('New cat added with ID:', newCatId);
+    console.log('handleSubmitCat: New cat added with ID:', newCatId);
     
     // Revalidate the homepage to show the new cat
     revalidatePath('/');
+    console.log("handleSubmitCat: Revalidated path '/'.");
 
     return {
       isDuplicate: false,
@@ -76,7 +88,7 @@ export async function handleSubmitCat(
       success: true,
     };
   } catch (error) {
-    console.error('Failed to save cat to database:', error);
+    console.error('handleSubmitCat: Failed to save cat to database:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return {
       isDuplicate: false,

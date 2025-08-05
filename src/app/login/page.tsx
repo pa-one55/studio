@@ -42,20 +42,23 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
+    console.log("LoginPage: useEffect triggered. Checking for redirect result...");
     getRedirectResult(auth)
       .then((result) => {
         if (result && result.user) {
+          console.log("LoginPage: Google login redirect successful.", result.user);
           toast({
             title: 'Login Successful',
             description: 'Welcome back!',
           });
           router.push('/');
         } else {
+          console.log("LoginPage: No redirect result found.");
           setIsGoogleLoading(false);
         }
       })
       .catch((error) => {
-        console.error("Google login error:", error);
+        console.error("LoginPage: Google login redirect error:", error);
         toast({
           variant: "destructive",
           title: 'Login Failed',
@@ -67,22 +70,25 @@ export default function LoginPage() {
 
 
   const handleGoogleLogin = async () => {
+    console.log("LoginPage: handleGoogleLogin called.");
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
   };
   
   const onEmailSubmit = async (values: FormValues) => {
+    console.log("LoginPage: onEmailSubmit called with values:", values);
     setIsEmailLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
+      console.log("LoginPage: Email login successful.");
       toast({
         title: 'Login Successful',
         description: 'Welcome back!',
       });
       router.push('/');
     } catch (error: any) {
-      console.error("Email login error:", error);
+      console.error("LoginPage: Email login error:", error);
       toast({
         variant: "destructive",
         title: 'Login Failed',
@@ -91,6 +97,7 @@ export default function LoginPage() {
             : error.message,
       });
     } finally {
+        console.log("LoginPage: onEmailSubmit finished.");
         setIsEmailLoading(false);
     }
   };

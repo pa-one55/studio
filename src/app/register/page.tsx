@@ -22,14 +22,17 @@ export default function RegisterPage() {
 
   useEffect(() => {
     const processRedirectResult = async () => {
+      console.log("RegisterPage: useEffect triggered. Checking for redirect result...");
       try {
         const result: UserCredential | null = await getRedirectResult(auth);
         
         if (result) {
+          console.log("RegisterPage: Google sign-up redirect successful.", result.user);
           const firebaseUser = result.user;
           const existingUser = await getUser(firebaseUser.uid);
-
+          
           if (!existingUser) {
+            console.log("RegisterPage: New user detected. Creating user document...");
             await addUser({
               id: firebaseUser.uid,
               name: firebaseUser.displayName || 'Anonymous',
@@ -38,11 +41,13 @@ export default function RegisterPage() {
               friends: [],
               socials: {},
             });
+            console.log("RegisterPage: User document created successfully.");
             toast({
               title: 'Sign Up Successful',
               description: 'Welcome! Your account has been created.',
             });
           } else {
+            console.log("RegisterPage: Existing user detected.");
             toast({
               title: 'Welcome Back!',
               description: 'You have successfully signed in.',
@@ -50,12 +55,11 @@ export default function RegisterPage() {
           }
           router.push('/');
         } else {
-            // Only stop loading if there's no redirect result.
-            // If there is a result, loading will stop after the router push.
+            console.log("RegisterPage: No redirect result found.");
             setIsLoading(false);
         }
       } catch (error: any) {
-        console.error("Google sign up error:", error);
+        console.error("RegisterPage: Google sign up redirect error:", error);
         toast({
           variant: "destructive",
           title: 'Sign Up Failed',
@@ -69,6 +73,7 @@ export default function RegisterPage() {
   }, [auth, toast, router]);
 
   const handleGoogleSignUp = async () => {
+    console.log("RegisterPage: handleGoogleSignUp called.");
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);

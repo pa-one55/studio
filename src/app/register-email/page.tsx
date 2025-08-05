@@ -50,14 +50,17 @@ export default function RegisterEmailPage() {
 
    useEffect(() => {
     const processRedirectResult = async () => {
+       console.log("RegisterEmailPage: useEffect triggered. Checking for redirect result...");
       try {
         const result: UserCredential | null = await getRedirectResult(auth);
         
         if (result) {
+          console.log("RegisterEmailPage: Google sign-up redirect successful.", result.user);
           const firebaseUser = result.user;
           const existingUser = await getUser(firebaseUser.uid);
           
           if (!existingUser) {
+            console.log("RegisterEmailPage: New user detected. Creating user document...");
             await addUser({
               id: firebaseUser.uid,
               name: firebaseUser.displayName || 'Anonymous',
@@ -66,11 +69,13 @@ export default function RegisterEmailPage() {
               friends: [],
               socials: {},
             });
+            console.log("RegisterEmailPage: User document created successfully.");
             toast({
               title: 'Sign Up Successful',
               description: 'You have successfully signed up with Google.',
             });
           } else {
+             console.log("RegisterEmailPage: Existing user detected.");
              toast({
               title: 'Welcome Back!',
               description: 'You have successfully signed in.',
@@ -78,10 +83,11 @@ export default function RegisterEmailPage() {
           }
           router.push('/');
         } else {
+            console.log("RegisterEmailPage: No redirect result found.");
             setIsGoogleLoading(false);
         }
       } catch (error: any) {
-        console.error("Google sign up error:", error);
+        console.error("RegisterEmailPage: Google sign up redirect error:", error);
         toast({
           variant: "destructive",
           title: 'Sign Up Failed',
@@ -95,21 +101,25 @@ export default function RegisterEmailPage() {
   }, [auth, toast, router]);
 
   const handleGoogleSignUp = async () => {
+    console.log("RegisterEmailPage: handleGoogleSignUp called.");
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
   };
   
   const onSubmit = async (values: FormValues) => {
+    console.log("RegisterEmailPage: onSubmit called with values:", values);
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
+      console.log("RegisterEmailPage: Firebase user created in auth:", firebaseUser.uid);
       const firstName = values.firstName || 'User';
       const lastName = values.lastName || '';
       
       const userImage = `https://placehold.co/128x128.png?text=${firstName.charAt(0)}${lastName ? lastName.charAt(0) : ''}`;
 
+      console.log("RegisterEmailPage: Creating user document in Firestore...");
       await addUser({
         id: firebaseUser.uid,
         name: `${firstName} ${lastName}`.trim(),
@@ -118,6 +128,7 @@ export default function RegisterEmailPage() {
         friends: [],
         socials: {},
       });
+      console.log("RegisterEmailPage: User document created successfully.");
       
       toast({
         title: 'Account Created!',
@@ -127,13 +138,14 @@ export default function RegisterEmailPage() {
       router.push('/');
 
     } catch (error: any) {
-        console.error("Email sign up error:", error);
+        console.error("RegisterEmailPage: Email sign up error:", error);
         toast({
           variant: "destructive",
           title: 'Sign Up Failed',
           description: error.message,
         });
     } finally {
+        console.log("RegisterEmailPage: onSubmit finished.");
         setIsLoading(false);
     }
   };
