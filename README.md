@@ -10,6 +10,7 @@ Follow these instructions to get the project up and running on your local machin
 
 - [Node.js](https://nodejs.org/) (version 20 or later recommended)
 - [npm](https://www.npmjs.com/) (usually comes with Node.js)
+- [Firebase CLI](https://firebase.google.com/docs/cli)
 
 ### 1. Installation
 
@@ -74,3 +75,13 @@ This will create an optimized build in the `.next` folder. You can then start th
 ```bash
 npm start
 ```
+
+### 5. Deploying to Firebase
+
+To deploy your application to Firebase App Hosting, run the following command from your project's root directory:
+
+```bash
+firebase apphosting:backends:deploy
+```
+
+You may be prompted to select your Firebase project and the backend resource to deploy.
