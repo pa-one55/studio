@@ -17,6 +17,7 @@ import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { uploadCatPhoto } from '@/lib/firebase/storage';
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -41,6 +42,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function SubmitCatForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -117,13 +119,16 @@ export function SubmitCatForm() {
 
     setIsSubmitting(true);
     try {
-      // In a real app, you would upload the image to Firebase Storage first
-      // and get a URL. For now, we'll use a placeholder.
+      setSubmitStatus('Uploading photo...');
+      const photoFile = values.photo[0];
+      const imageUrl = await uploadCatPhoto(photoFile, user.uid);
+      
+      setSubmitStatus('Saving listing...');
       const result = await handleSubmitCat({
         catDescription: values.catDescription,
         location: values.location,
         name: values.name,
-        imageUrl: "https://placehold.co/600x400.png", // Placeholder
+        imageUrl: imageUrl, 
         listerId: user.uid,
       });
 
@@ -139,9 +144,11 @@ export function SubmitCatForm() {
          toast({ variant: "destructive", title: 'Submission Failed', description: result.error });
       }
     } catch (error) {
-      toast({ variant: "destructive", title: 'An error occurred', description: 'Could not submit the form. Please try again.' });
+      const errorMessage = error instanceof Error ? error.message : 'Could not submit the form. Please try again.';
+      toast({ variant: "destructive", title: 'An error occurred', description: errorMessage });
     } finally {
       setIsSubmitting(false);
+      setSubmitStatus('');
     }
   }
   
@@ -183,6 +190,7 @@ export function SubmitCatForm() {
                                 onBlur={field.onBlur}
                                 name={field.name}
                                 ref={field.ref}
+                                disabled={isSubmitting}
                              />
                         </label>
                     </div>
@@ -200,7 +208,7 @@ export function SubmitCatForm() {
               <FormItem>
                 <FormLabel>Cat's Name (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Mittens" {...field} />
+                  <Input placeholder="e.g., Mittens" {...field}  disabled={isSubmitting} />
                 </FormControl>
                 <FormDescription>If you've given the stray cat a temporary name, enter it here.</FormDescription>
                 <FormMessage />
@@ -215,7 +223,7 @@ export function SubmitCatForm() {
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="e.g., Small ginger tabby, very friendly, found near the park entrance." {...field} rows={4} />
+                  <Textarea placeholder="e.g., Small ginger tabby, very friendly, found near the park entrance." {...field} rows={4}  disabled={isSubmitting}/>
                 </FormControl>
                 <FormDescription>Describe the cat's appearance, behavior, and any distinguishing features.</FormDescription>
                 <FormMessage />
@@ -231,7 +239,7 @@ export function SubmitCatForm() {
                 <FormLabel>Location Found</FormLabel>
                 <FormDescription>Click the button to automatically record the location where you found the cat.</FormDescription>
                 <FormControl>
-                    <Button type="button" variant="outline" className="w-full" onClick={handleGetLocation} disabled={isFetchingLocation}>
+                    <Button type="button" variant="outline" className="w-full" onClick={handleGetLocation} disabled={isFetchingLocation || isSubmitting}>
                         {isFetchingLocation ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
@@ -258,7 +266,7 @@ export function SubmitCatForm() {
 
           <Button type="submit" disabled={isSubmitting || !user} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Submit Cat Listing
+            {isSubmitting ? submitStatus : 'Submit Cat Listing'}
           </Button>
         </form>
       </Form>
