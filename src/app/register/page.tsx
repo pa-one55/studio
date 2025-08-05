@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, type UserCredential, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -27,21 +27,24 @@ export default function RegisterPage() {
   const router = useRouter();
 
   // This `useEffect` hook runs ONLY on the client-side (in the browser).
-  // All console.log statements inside it will appear in your BROWSER'S developer console.
+  // It uses onAuthStateChanged, which is the most reliable way to check a user's status.
   useEffect(() => {
-    // This function checks if a user has just returned from a Google Sign-In redirect.
-    const processRedirectResult = async () => {
-      console.log("BROWSER LOG: useEffect started. Checking for Google redirect result...");
-      try {
-        const result: UserCredential | null = await getRedirectResult(auth);
+    console.log("BROWSER LOG: useEffect started. Setting up onAuthStateChanged listener...");
+    
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("BROWSER LOG: onAuthStateChanged triggered. User:", firebaseUser);
+
+      if (firebaseUser) {
+        // A user is logged in.
+        setIsLoading(true); // Show loader while we check the database.
+        console.log("BROWSER LOG: User detected with UID:", firebaseUser.uid);
         
-        if (result) {
-          console.log("BROWSER LOG: Google sign-up redirect successful.", result.user);
-          const firebaseUser = result.user;
+        try {
           const existingUser = await getUser(firebaseUser.uid);
-          
+
           if (!existingUser) {
-            console.log("BROWSER LOG: New user detected. Creating user document in Firestore...");
+            // This is a new user, create their document in Firestore.
+            console.log("BROWSER LOG: New user. Creating Firestore document...");
             await addUser({
               id: firebaseUser.uid,
               name: firebaseUser.displayName || 'Anonymous User',
@@ -56,42 +59,37 @@ export default function RegisterPage() {
               description: 'Welcome! Your account has been created.',
             });
           } else {
-            console.log("BROWSER LOG: Existing user detected. Not creating a new document.");
-            toast({
+            // This user already exists in Firestore.
+            console.log("BROWSER LOG: Existing user found. Not creating a new document.");
+             toast({
               title: 'Welcome Back!',
-              description: 'You have successfully signed in.',
+              description: 'You are already signed in.',
             });
           }
+          
+          // Redirect to the homepage.
           console.log("BROWSER LOG: Redirecting to homepage...");
           router.push('/');
-        } else {
-            console.log("BROWSER LOG: No redirect result found. Now checking for already logged-in user...");
-            // If there's no redirect result, check if the user is already logged in.
-            const unsubscribe = onAuthStateChanged(auth, (user) => {
-              if (user) {
-                console.log("BROWSER LOG: User is already logged in. Redirecting to homepage.");
-                router.push('/');
-              } else {
-                console.log("BROWSER LOG: No user is logged in. Displaying registration page.");
-                setIsLoading(false);
-              }
-            });
-            // Clean up the listener
-            return () => unsubscribe();
+
+        } catch (error) {
+          console.error("BROWSER LOG: Error during database operation:", error);
+          toast({ variant: "destructive", title: 'Error', description: 'Failed to set up your account.' });
+          setIsLoading(false); // Stop loading on error
         }
-      } catch (error: any) {
-        console.error("BROWSER LOG: Error during Google sign-up redirect processing:", error);
-        toast({
-          variant: "destructive",
-          title: 'Sign Up Failed',
-          description: error.message,
-        });
+
+      } else {
+        // No user is logged in. Show the registration page.
+        console.log("BROWSER LOG: No user is signed in. Ready for registration attempt.");
         setIsLoading(false);
       }
+    });
+
+    // Cleanup function: remove the listener when the component unmounts.
+    return () => {
+      console.log("BROWSER LOG: Cleaning up onAuthStateChanged listener.");
+      unsubscribe();
     };
-    
-    processRedirectResult();
-  }, [auth, toast, router]);
+  }, [auth, router, toast]);
 
   // This function is called when the user clicks the "Sign up with Google" button.
   const handleGoogleSignUp = async () => {
@@ -99,10 +97,11 @@ export default function RegisterPage() {
     setIsLoading(true); // Show the loading spinner
     const provider = new GoogleAuthProvider();
     // This will redirect the user to Google's sign-in page.
+    // After they sign in, they will be redirected back here, and the onAuthStateChanged listener will fire.
     await signInWithRedirect(auth, provider);
   };
 
-  // While we are checking for the redirect result, show a loading spinner.
+  // While we are waiting for onAuthStateChanged to give us a status, show a loading spinner.
   if (isLoading) {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">

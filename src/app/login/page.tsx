@@ -5,10 +5,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, User, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -27,9 +26,10 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function LoginPage() {
+  console.log("LoginPage: Component rendering...");
   const { toast } = useToast();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(true);
-  const [isEmailLoading, setIsEmailLoading] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true); // For the initial auth state check
+  const [isSubmitting, setIsSubmitting] = useState(false); // For form submissions
   const router = useRouter();
   const auth = getAuth(app);
   
@@ -41,70 +41,67 @@ export default function LoginPage() {
     }
   });
 
+  // This useEffect hook reliably checks the user's authentication state when the page loads.
   useEffect(() => {
-    console.log("LoginPage: useEffect triggered. Checking for redirect result...");
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result && result.user) {
-          console.log("LoginPage: Google login redirect successful.", result.user);
-          toast({
-            title: 'Login Successful',
-            description: 'Welcome back!',
-          });
-          router.push('/');
-        } else {
-          console.log("LoginPage: No redirect result found.");
-          setIsGoogleLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.error("LoginPage: Google login redirect error:", error);
-        toast({
-          variant: "destructive",
-          title: 'Login Failed',
-          description: error.message,
-        });
-        setIsGoogleLoading(false);
-      });
-  }, [auth, toast, router]);
+    console.log("BROWSER LOG: LoginPage useEffect started. Setting up onAuthStateChanged listener...");
+    
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      console.log("BROWSER LOG: LoginPage onAuthStateChanged triggered. User:", firebaseUser);
+
+      if (firebaseUser) {
+        // A user is already logged in.
+        console.log("BROWSER LOG: User is already logged in. Redirecting to homepage...");
+        toast({ title: 'Already Logged In', description: 'Redirecting you to the homepage.' });
+        router.push('/');
+      } else {
+        // No user is logged in. Show the login page.
+        console.log("BROWSER LOG: No user is signed in. Login page will be displayed.");
+        setIsAuthLoading(false);
+      }
+    });
+
+    // Cleanup function: remove the listener when the component unmounts.
+    return () => {
+      console.log("BROWSER LOG: Cleaning up LoginPage onAuthStateChanged listener.");
+      unsubscribe();
+    }
+  }, [auth, router, toast]);
 
 
   const handleGoogleLogin = async () => {
-    console.log("LoginPage: handleGoogleLogin called.");
-    setIsGoogleLoading(true);
+    console.log("BROWSER LOG: handleGoogleLogin called.");
+    setIsSubmitting(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
+    // After redirect, the onAuthStateChanged listener will handle the result.
   };
   
   const onEmailSubmit = async (values: FormValues) => {
-    console.log("LoginPage: onEmailSubmit called with values:", values);
-    setIsEmailLoading(true);
+    console.log("BROWSER LOG: onEmailSubmit called with values:", values);
+    setIsSubmitting(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      console.log("LoginPage: Email login successful.");
+      console.log("BROWSER LOG: Email login successful.");
       toast({
         title: 'Login Successful',
         description: 'Welcome back!',
       });
-      router.push('/');
+      // The onAuthStateChanged listener will handle the redirect.
     } catch (error: any) {
-      console.error("LoginPage: Email login error:", error);
+      console.error("BROWSER LOG: Email login error:", error);
       toast({
         variant: "destructive",
         title: 'Login Failed',
         description: error.code === 'auth/invalid-credential' 
             ? 'Invalid email or password. Please try again.'
-            : error.message,
+            : 'An unexpected error occurred.',
       });
-    } finally {
-        console.log("LoginPage: onEmailSubmit finished.");
-        setIsEmailLoading(false);
+       setIsSubmitting(false);
     }
   };
 
-  const isLoading = isGoogleLoading || isEmailLoading;
-
-  if (isGoogleLoading) {
+  // Show a global loading spinner only for the initial auth check.
+  if (isAuthLoading) {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -123,8 +120,8 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-             <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
-               {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 64.5C308.6 92.6 279.2 80 248 80c-73.2 0-133.2 59.9-133.2 133.2S174.8 386.4 248 386.4c77.9 0 119.5-56.2 123.4-86.4H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>}
+             <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isSubmitting}>
+               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 64.5C308.6 92.6 279.2 80 248 80c-73.2 0-133.2 59.9-133.2 133.2S174.8 386.4 248 386.4c77.9 0 119.5-56.2 123.4-86.4H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>}
               Login with Google
             </Button>
 
@@ -143,7 +140,7 @@ export default function LoginPage() {
                             <FormItem>
                                 <FormLabel>Email</FormLabel>
                                 <FormControl>
-                                    <Input type="email" placeholder="m@example.com" {...field} disabled={isLoading} />
+                                    <Input type="email" placeholder="m@example.com" {...field} disabled={isSubmitting} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -161,14 +158,14 @@ export default function LoginPage() {
                                     </Link>
                                 </div>
                                 <FormControl>
-                                    <Input type="password" {...field} disabled={isLoading}/>
+                                    <Input type="password" {...field} disabled={isSubmitting}/>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isEmailLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Login
                     </Button>
                 </form>
