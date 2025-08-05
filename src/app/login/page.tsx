@@ -40,7 +40,7 @@ export default function LoginPage() {
         password: '',
     }
   });
-
+console.log("LoginPage: Form initialized with default values:", form.getValues());
   useEffect(() => {
     console.log("LoginPage: useEffect triggered. Checking for redirect result...");
     getRedirectResult(auth)

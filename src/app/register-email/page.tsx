@@ -47,6 +47,7 @@ export default function RegisterEmailPage() {
     }
   });
 
+  console.log("RegisterEmailPage: Form initialized with default values:", form.getValues());
 
    useEffect(() => {
     const processRedirectResult = async () => {

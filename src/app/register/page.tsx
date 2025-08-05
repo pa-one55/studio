@@ -8,24 +8,27 @@ import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
 import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, type UserCredential } from 'firebase/auth';
 import { app } from '@/lib/firebase';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast'; // used to show small pop-up notifications to the user (like "Sign up successful" or "An error occurred").
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { addUser, getUser } from '@/lib/firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-  const auth = getAuth(app);
-  const router = useRouter();
+  console.log("RegisterPage k code me aaya hai");
+  const { toast } = useToast(); //  used to show small pop-up notifications to the user
+  const [isLoading, setIsLoading] = useState(true); // reack ka bakchodi
+  const auth = getAuth(app); // gets the Firebase Authentication service instance.
+  const router = useRouter(); // to redirect the user after a successful registration
 
+  // iske niche ka console.log sirf browser me dikhega
   useEffect(() => {
     const processRedirectResult = async () => {
       console.log("RegisterPage: useEffect triggered. Checking for redirect result...");
       try {
         const result: UserCredential | null = await getRedirectResult(auth);
-        
+        console.log("RegisterPage: Redirect result received:", result);
+
         if (result) {
           console.log("RegisterPage: Google sign-up redirect successful.", result.user);
           const firebaseUser = result.user;
