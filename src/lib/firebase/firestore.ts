@@ -1,6 +1,6 @@
 import { db } from '@/lib/firebase';
 import type { Cat, User } from '@/lib/types';
-import { collection, getDocs, doc, getDoc, addDoc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, setDoc, query, where, Timestamp } from 'firebase/firestore';
 
 // --- User Functions ---
 
@@ -13,12 +13,19 @@ export async function getUser(userId: string): Promise<User | null> {
         return {
             id: userDocSnap.id,
             name: data.name,
+            email: data.email,
             imageUrl: data.imageUrl,
             socials: data.socials || {},
+            friends: data.friends || [],
         };
     } else {
         return null;
     }
+}
+
+export async function addUser(user: User): Promise<void> {
+    const userDocRef = doc(db, 'users', user.id);
+    await setDoc(userDocRef, user);
 }
 
 
@@ -35,8 +42,6 @@ export async function getAllCats(): Promise<Cat[]> {
             description: data.description,
             imageUrl: data.imageUrl,
             location: data.location,
-            lat: data.lat,
-            lng: data.lng,
             listedDate: (data.listedDate as Timestamp).toDate().toISOString(),
             listerId: data.listerId,
         }
@@ -56,8 +61,6 @@ export async function getCat(catId: string): Promise<Cat | null> {
             description: data.description,
             imageUrl: data.imageUrl,
             location: data.location,
-            lat: data.lat,
-            lng: data.lng,
             listedDate: (data.listedDate as Timestamp).toDate().toISOString(),
             listerId: data.listerId,
         };
@@ -78,8 +81,6 @@ export async function getCatsByUser(userId: string): Promise<Cat[]> {
             description: data.description,
             imageUrl: data.imageUrl,
             location: data.location,
-            lat: data.lat,
-            lng: data.lng,
             listedDate: (data.listedDate as Timestamp).toDate().toISOString(),
             listerId: data.listerId,
         }

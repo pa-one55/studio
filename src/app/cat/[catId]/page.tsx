@@ -17,14 +17,8 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
   
   const lister: User | null = await getUser(cat.listerId);
 
-  if (!lister) {
-    // This case should ideally not happen if data integrity is maintained
-    // but it's good practice to handle it.
-    // We can show the cat profile with a generic "Unknown Lister"
-  }
-
-
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${cat.lat},${cat.lng}`;
+  // Generate a Google Maps embed URL from the location description
+  const mapEmbedUrl = `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}&q=${encodeURIComponent(cat.location)}`;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -86,13 +80,16 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
 
                 <div>
                      <h2 className="text-lg font-semibold mb-2 font-headline">Location</h2>
-                     <p className="text-muted-foreground">This is an approximate location to protect privacy.</p>
-                      <Button asChild className="mt-2" variant="outline">
-                        <a href={mapUrl} target="_blank" rel="noopener noreferrer">
-                          View on Map
-                          <ExternalLink className="h-4 w-4 ml-2" />
-                        </a>
-                      </Button>
+                      <div className="aspect-video rounded-lg overflow-hidden mt-2">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          allowFullScreen
+                          src={mapEmbedUrl}>
+                        </iframe>
+                      </div>
                 </div>
               </div>
             </CardContent>

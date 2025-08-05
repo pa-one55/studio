@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { handleSubmitCat } from '@/app/submit-cat/actions';
 import Image from 'next/image';
-import { Loader2, UploadCloud, MapPin, LocateFixed } from 'lucide-react';
+import { Loader2, UploadCloud } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
@@ -34,8 +34,6 @@ const formSchema = z.object({
   }).max(200, {
     message: 'Location description cannot exceed 200 characters.',
   }),
-  lat: z.coerce.number().min(-90, 'Invalid latitude').max(90, 'Invalid latitude'),
-  lng: z.coerce.number().min(-180, 'Invalid longitude').max(180, 'Invalid longitude'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -51,7 +49,6 @@ const fileToDataUri = (file: File): Promise<string> => {
 
 export function SubmitCatForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [duplicateCheckResult, setDuplicateCheckResult] = useState<{isDuplicate: boolean; duplicateExplanation: string} | null>(null);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
@@ -78,34 +75,6 @@ export function SubmitCatForm() {
     }
   };
 
-  const handleGetCurrentLocation = () => {
-    setIsGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        form.setValue('lat', parseFloat(latitude.toFixed(6)));
-        form.setValue('lng', parseFloat(longitude.toFixed(6)));
-        toast({
-          title: 'Location Fetched',
-          description: 'Your current location has been filled in.',
-        });
-        setIsGettingLocation(false);
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
-        toast({
-          variant: "destructive",
-          title: 'Location Error',
-          description: 'Could not get your location. Please enter it manually.',
-        });
-        setIsGettingLocation(false);
-      },
-      {
-        enableHighAccuracy: true,
-      }
-    );
-  };
-
   const processSubmit = async (values: FormValues, force: boolean = false) => {
     setIsSubmitting(true);
     try {
@@ -116,8 +85,6 @@ export function SubmitCatForm() {
         photoDataUri,
         catDescription: values.catDescription,
         locationDescription: values.locationDescription,
-        lat: values.lat,
-        lng: values.lng,
         name: values.name,
         imageUrl: "https://placehold.co/600x400.png" // Placeholder
       }, force);
@@ -231,58 +198,11 @@ export function SubmitCatForm() {
                 <FormControl>
                   <Textarea placeholder="e.g., Found near the playground at Central Park, around 5 PM." {...field} rows={2} />
                 </FormControl>
-                <FormDescription>Be as specific as possible about where and when you found the cat.</FormDescription>
+                <FormDescription>Be as specific as possible about where and when you found the cat. This will be used to generate a map.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
-
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <FormLabel>Found Location Coordinates</FormLabel>
-                 <Button type="button" variant="outline" size="sm" onClick={handleGetCurrentLocation} disabled={isGettingLocation}>
-                    {isGettingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixed className="mr-2 h-4 w-4" />}
-                    Use My Location
-                </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                  control={form.control}
-                  name="lat"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>Latitude</FormLabel>
-                      <FormControl>
-                      <div className="relative">
-                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type="number" placeholder="e.g., 34.0522" {...field} className="pl-10" />
-                      </div>
-                      </FormControl>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-              <FormField
-                  control={form.control}
-                  name="lng"
-                  render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>Longitude</FormLabel>
-                      <FormControl>
-                      <div className="relative">
-                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input type="number" placeholder="e.g., -118.2437" {...field} className="pl-10" />
-                      </div>
-                      </FormControl>
-                      <FormMessage />
-                  </FormItem>
-                  )}
-              />
-            </div>
-            <FormDescription>
-                You can get coordinates from Google Maps, or use your current location.
-            </FormDescription>
-          </div>
 
           <Button type="submit" disabled={isSubmitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

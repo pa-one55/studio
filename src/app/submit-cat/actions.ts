@@ -22,8 +22,6 @@ export async function handleSubmitCat(
     photoDataUri: string;
     catDescription: string;
     locationDescription: string;
-    lat: number;
-    lng: number;
     name?: string;
     imageUrl: string;
   },
@@ -55,8 +53,6 @@ export async function handleSubmitCat(
       description: input.catDescription,
       imageUrl: input.imageUrl, // In a real app, you'd upload the photo and get a URL
       location: input.locationDescription,
-      lat: input.lat,
-      lng: input.lng,
       listerId: FAKE_USER_ID, // Use the authenticated user's ID
       listedDate: new Date(),
     });

@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, UserCredential } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { addUser } from '@/lib/firebase/firestore';
 
 export default function RegisterPage() {
   const { toast } = useToast();
@@ -19,8 +20,19 @@ export default function RegisterPage() {
 
   useEffect(() => {
     getRedirectResult(auth)
-      .then((result) => {
+      .then(async (result: UserCredential | null) => {
         if (result) {
+          const firebaseUser = result.user;
+          // Create a new user in Firestore
+          await addUser({
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || 'Anonymous',
+            email: firebaseUser.email || '',
+            imageUrl: firebaseUser.photoURL || 'https://placehold.co/128x128.png',
+            friends: [],
+            socials: {},
+          });
+
           toast({
             title: 'Sign Up Successful',
             description: 'You have successfully signed up with Google.',

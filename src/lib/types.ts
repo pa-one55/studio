@@ -1,12 +1,14 @@
 export interface User {
   id: string;
   name: string;
+  email: string;
   imageUrl: string;
-  socials: {
+  socials?: {
     twitter?: string;
     github?: string;
     linkedin?: string;
   };
+  friends?: string[]; // Array of user IDs
 }
 
 export interface Cat {
@@ -14,9 +16,7 @@ export interface Cat {
   name?: string;
   description: string;
   imageUrl: string;
-  location: string;
-  lat: number;
-  lng: number;
+  location: string; // Text description of the location
   listedDate: string;
   listerId: string;
 }
