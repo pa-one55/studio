@@ -29,7 +29,6 @@ export default function RegisterPage() {
           const firebaseUser = result.user;
           const existingUser = await getUser(firebaseUser.uid);
 
-          // Only create a new user if one doesn't already exist
           if (!existingUser) {
             await addUser({
               id: firebaseUser.uid,
@@ -50,6 +49,10 @@ export default function RegisterPage() {
             });
           }
           router.push('/');
+        } else {
+            // Only stop loading if there's no redirect result.
+            // If there is a result, loading will stop after the router push.
+            setIsLoading(false);
         }
       } catch (error: any) {
         console.error("Google sign up error:", error);
@@ -58,7 +61,6 @@ export default function RegisterPage() {
           title: 'Sign Up Failed',
           description: error.message,
         });
-      } finally {
         setIsLoading(false);
       }
     };
@@ -91,8 +93,8 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignUp}>
-               <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 64.5C308.6 92.6 279.2 80 248 80c-73.2 0-133.2 59.9-133.2 133.2S174.8 386.4 248 386.4c77.9 0 119.5-56.2 123.4-86.4H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignUp} disabled={isLoading}>
+               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 64.5C308.6 92.6 279.2 80 248 80c-73.2 0-133.2 59.9-133.2 133.2S174.8 386.4 248 386.4c77.9 0 119.5-56.2 123.4-86.4H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>}
               Sign up with Google
             </Button>
             
