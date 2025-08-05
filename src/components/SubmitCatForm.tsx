@@ -12,10 +12,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { handleSubmitCat } from '@/app/submit-cat/actions';
 import Image from 'next/image';
-import { Loader2, UploadCloud } from 'lucide-react';
+import { Loader2, UploadCloud, MapPin, CheckCircle } from 'lucide-react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -32,9 +33,7 @@ const formSchema = z.object({
   }).max(500, {
     message: 'Description cannot exceed 500 characters.',
   }),
-  location: z.string().url({ message: "Please enter a valid Google Maps URL." }).min(10, {
-    message: 'Location URL must be at least 10 characters.',
-  }),
+  location: z.string().min(1, { message: "Location is required."}),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -45,6 +44,8 @@ export function SubmitCatForm() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
   const { toast } = useToast();
   const router = useRouter();
@@ -59,7 +60,7 @@ export function SubmitCatForm() {
          toast({
           variant: "destructive",
           title: 'Unauthorized',
-          description: "Please log in to list a cat.",
+          description: "Please log in to list a stray cat.",
         });
       }
       setAuthLoading(false);
@@ -86,6 +87,26 @@ export function SubmitCatForm() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleGetLocation = () => {
+    setIsFetchingLocation(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        form.setValue('location', `${latitude},${longitude}`, { shouldValidate: true });
+        setIsFetchingLocation(false);
+        toast({
+            title: 'Location Captured!',
+            description: 'Your current location has been successfully recorded.',
+        })
+      },
+      (error) => {
+        setLocationError(`Error: ${error.message}. Please enable location permissions in your browser.`);
+        setIsFetchingLocation(false);
+      }
+    );
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -146,7 +167,7 @@ export function SubmitCatForm() {
                     <div className="flex items-center justify-center w-full">
                         <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted/50 transition-colors">
                             {photoPreview ? (
-                                <Image src={photoPreview} alt="Preview" width={200} height={200} className="object-contain h-full p-4" />
+                                <Image src={photoPreview} alt="Preview" width={200} height={200} className="object-contain h-full p-4" data-ai-hint="cat" />
                             ) : (
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                     <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
@@ -181,7 +202,7 @@ export function SubmitCatForm() {
                 <FormControl>
                   <Input placeholder="e.g., Mittens" {...field} />
                 </FormControl>
-                <FormDescription>If you've given the cat a name, enter it here.</FormDescription>
+                <FormDescription>If you've given the cat a temporary name, enter it here.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -194,7 +215,7 @@ export function SubmitCatForm() {
               <FormItem>
                 <FormLabel>Cat Description</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="e.g., Small ginger tabby, very friendly, looks healthy." {...field} rows={4} />
+                  <Textarea placeholder="e.g., Small ginger tabby, very friendly, found near the park entrance." {...field} rows={4} />
                 </FormControl>
                 <FormDescription>Describe the cat's appearance, behavior, and any distinguishing features.</FormDescription>
                 <FormMessage />
@@ -207,11 +228,29 @@ export function SubmitCatForm() {
             name="location"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Google Maps Location URL</FormLabel>
+                <FormLabel>Location</FormLabel>
+                <FormDescription>Click the button to record the location where you found the cat.</FormDescription>
                 <FormControl>
-                  <Input placeholder="https://maps.app.goo.gl/..." {...field} />
+                    <Button type="button" variant="outline" className="w-full" onClick={handleGetLocation} disabled={isFetchingLocation}>
+                        {isFetchingLocation ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <MapPin className="mr-2 h-4 w-4" />
+                        )}
+                        Get Current Location
+                    </Button>
                 </FormControl>
-                <FormDescription>Open Google Maps, find the location, click "Share", and then "Copy link".</FormDescription>
+                {field.value && !isFetchingLocation && (
+                    <div className="flex items-center p-3 text-sm text-emerald-600 bg-emerald-50 rounded-md">
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Location captured successfully!
+                    </div>
+                )}
+                {locationError && (
+                    <Alert variant="destructive" className="mt-2">
+                        <AlertDescription>{locationError}</AlertDescription>
+                    </Alert>
+                )}
                 <FormMessage />
               </FormItem>
             )}

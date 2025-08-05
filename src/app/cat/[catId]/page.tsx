@@ -17,6 +17,7 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
   }
   
   const lister: User | null = await getUser(cat.listerId);
+  const googleMapsUrl = `https://www.google.com/maps?q=${cat.location}`;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -73,9 +74,9 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
                 </div>
 
                 <div>
-                     <h2 className="text-lg font-semibold mb-2 font-headline">Location</h2>
+                     <h2 className="text-lg font-semibold mb-2 font-headline">Last Known Location</h2>
                       <Button asChild className="w-full">
-                        <a href={cat.location} target="_blank" rel="noopener noreferrer">
+                        <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
                             <MapPin className="mr-2" /> View on Google Maps
                         </a>
                       </Button>

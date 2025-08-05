@@ -17,7 +17,7 @@ export interface Cat {
   name?: string;
   description: string;
   imageUrl: string;
-  location: string; // A Google Maps URL
+  location: string; // "latitude,longitude"
   listedDate: string;
   listerId: string;
 }
