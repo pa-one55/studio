@@ -1,12 +1,15 @@
 
 'use client';
 
+// This file contains client-side logic that runs in the user's browser.
+// Logs from this file will appear in the BROWSER'S developer console, not the terminal.
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, type UserCredential } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, type UserCredential, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -15,37 +18,30 @@ import { addUser, getUser } from '@/lib/firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  // --- EXPLANATION OF HOOKS ---
-  // 1. `useToast`: A function to show pop-up notifications to the user.
-  // 2. `useState`: Manages the loading state to show/hide a spinner.
-  // 3. `getAuth`: The core Firebase authentication object. Essential.
-  // 4. `useRouter`: Used to redirect the user to another page.
-  console.log("RegisterPage: Component rendering.");
+  // This log runs on the server AND the client, so you'll see it in both the terminal and the browser console.
+  console.log("RegisterPage: Component rendering...");
+  
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true); // Start as true to check for redirect
+  const [isLoading, setIsLoading] = useState(true);
   const auth = getAuth(app);
   const router = useRouter();
 
-  // `useEffect` runs after the page loads. It's perfect for checking the result
-  // of the Google Sign-In redirect without blocking the page from showing up.
+  // This `useEffect` hook runs ONLY on the client-side (in the browser).
+  // All console.log statements inside it will appear in your BROWSER'S developer console.
   useEffect(() => {
+    // This function checks if a user has just returned from a Google Sign-In redirect.
     const processRedirectResult = async () => {
-      console.log("RegisterPage: useEffect started. Checking for Google redirect result...");
+      console.log("BROWSER LOG: useEffect started. Checking for Google redirect result...");
       try {
         const result: UserCredential | null = await getRedirectResult(auth);
         
-        // This is the most important part. `result` will only have a value
-        // if the user has just been redirected back from a successful Google Sign-In.
         if (result) {
-          console.log("RegisterPage: Google sign-up redirect successful.", result.user);
+          console.log("BROWSER LOG: Google sign-up redirect successful.", result.user);
           const firebaseUser = result.user;
-          
-          // Check if we have already created a document for this user in our database.
           const existingUser = await getUser(firebaseUser.uid);
           
           if (!existingUser) {
-            // If the user is new, create a document for them in the 'users' collection.
-            console.log("RegisterPage: New user detected. Creating user document in Firestore...");
+            console.log("BROWSER LOG: New user detected. Creating user document in Firestore...");
             await addUser({
               id: firebaseUser.uid,
               name: firebaseUser.displayName || 'Anonymous User',
@@ -54,31 +50,37 @@ export default function RegisterPage() {
               friends: [],
               socials: {},
             });
-            console.log("RegisterPage: User document created successfully.");
+            console.log("BROWSER LOG: User document created successfully.");
             toast({
               title: 'Sign Up Successful',
               description: 'Welcome! Your account has been created.',
             });
           } else {
-            // If they already exist, just welcome them back.
-            console.log("RegisterPage: Existing user detected. Not creating a new document.");
+            console.log("BROWSER LOG: Existing user detected. Not creating a new document.");
             toast({
               title: 'Welcome Back!',
               description: 'You have successfully signed in.',
             });
           }
-          // After everything is done, redirect to the homepage.
-          console.log("RegisterPage: Redirecting to homepage...");
+          console.log("BROWSER LOG: Redirecting to homepage...");
           router.push('/');
         } else {
-            // If `result` is null, it means the user just loaded the page normally,
-            // without coming from a Google redirect. So, we stop loading.
-            console.log("RegisterPage: No redirect result found. Displaying registration options.");
-            setIsLoading(false);
+            console.log("BROWSER LOG: No redirect result found. Now checking for already logged-in user...");
+            // If there's no redirect result, check if the user is already logged in.
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+              if (user) {
+                console.log("BROWSER LOG: User is already logged in. Redirecting to homepage.");
+                router.push('/');
+              } else {
+                console.log("BROWSER LOG: No user is logged in. Displaying registration page.");
+                setIsLoading(false);
+              }
+            });
+            // Clean up the listener
+            return () => unsubscribe();
         }
       } catch (error: any) {
-        // If there was any error during the process, show it in a toast.
-        console.error("RegisterPage: Error during Google sign-up redirect processing:", error);
+        console.error("BROWSER LOG: Error during Google sign-up redirect processing:", error);
         toast({
           variant: "destructive",
           title: 'Sign Up Failed',
@@ -88,13 +90,12 @@ export default function RegisterPage() {
       }
     };
     
-    // Call the function we just defined.
     processRedirectResult();
-  }, [auth, toast, router]); // These are dependencies. The effect re-runs if they change (they won't).
+  }, [auth, toast, router]);
 
   // This function is called when the user clicks the "Sign up with Google" button.
   const handleGoogleSignUp = async () => {
-    console.log("RegisterPage: 'Sign up with Google' button clicked.");
+    console.log("BROWSER LOG: 'Sign up with Google' button clicked.");
     setIsLoading(true); // Show the loading spinner
     const provider = new GoogleAuthProvider();
     // This will redirect the user to Google's sign-in page.
