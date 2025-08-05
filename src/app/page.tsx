@@ -1,14 +1,52 @@
 import { CatCard } from '@/components/CatCard';
 import { CatFilters } from '@/components/CatFilters';
-import { MOCK_CATS } from '@/lib/data';
+import { getAllCats } from '@/lib/firebase/firestore';
 import type { Cat } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
+import { Suspense } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+async function CatList() {
+  const cats: Cat[] = await getAllCats();
+
+  return (
+    <>
+      {cats.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {cats.map((cat) => (
+            <CatCard key={cat.id} cat={cat} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+          <p className="text-muted-foreground">No cats found matching your criteria.</p>
+          <p className="text-sm text-muted-foreground mt-2">Try adjusting your filters or checking back later.</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function CatListSkeleton() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {[...Array(8)].map((_, i) => (
+        <div key={i} className="flex flex-col space-y-3">
+          <Skeleton className="h-[225px] w-full rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 
 export default function Home() {
-  const cats: Cat[] = MOCK_CATS;
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -28,18 +66,9 @@ export default function Home() {
         <CatFilters />
       </div>
 
-      {cats.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {cats.map((cat) => (
-            <CatCard key={cat.id} cat={cat} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
-          <p className="text-muted-foreground">No cats found matching your criteria.</p>
-          <p className="text-sm text-muted-foreground mt-2">Try adjusting your filters or checking back later.</p>
-        </div>
-      )}
+      <Suspense fallback={<CatListSkeleton />}>
+        <CatList />
+      </Suspense>
     </div>
   );
 }

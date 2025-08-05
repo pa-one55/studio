@@ -15,6 +15,7 @@ import { Loader2, UploadCloud, MapPin, LocateFixed } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const formSchema = z.object({
+  name: z.string().optional(),
   photo: z.any().refine(
     (files) => files?.length > 0, 'A photo of the cat is required.'
   ).refine(
@@ -62,6 +63,7 @@ export function SubmitCatForm() {
     defaultValues: {
       catDescription: '',
       locationDescription: '',
+      name: '',
     },
   });
   
@@ -108,11 +110,16 @@ export function SubmitCatForm() {
     setIsSubmitting(true);
     try {
       const photoDataUri = await fileToDataUri(values.photo[0]);
-      // In a real app, you would pass lat/lng to handleSubmitCat
+      // In a real app, you would upload the image to Firebase Storage first
+      // and get a URL. For now, we'll pass the data URI and a placeholder.
       const result = await handleSubmitCat({
         photoDataUri,
         catDescription: values.catDescription,
-        locationDescription: `${values.locationDescription} (at ${values.lat}, ${values.lng})`,
+        locationDescription: values.locationDescription,
+        lat: values.lat,
+        lng: values.lng,
+        name: values.name,
+        imageUrl: "https://placehold.co/600x400.png" // Placeholder
       }, force);
 
       if (result.isDuplicate && !force) {
@@ -180,6 +187,21 @@ export function SubmitCatForm() {
                     </div>
                 </FormControl>
                 <FormDescription>A clear photo helps immensely in identifying the cat.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+           <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cat's Name (Optional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Mittens" {...field} />
+                </FormControl>
+                <FormDescription>If the cat responded to a name or had a tag, enter it here.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

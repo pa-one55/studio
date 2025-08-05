@@ -1,4 +1,4 @@
-import { MOCK_USERS, MOCK_CATS } from '@/lib/data';
+import { getUser, getCatsByUser } from '@/lib/firebase/firestore';
 import type { User, Cat } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -8,20 +8,14 @@ import Link from 'next/link';
 import { CatCard } from '@/components/CatCard';
 import { Twitter, Github, Linkedin, UserPlus } from 'lucide-react';
 
-export function generateStaticParams() {
-  return MOCK_USERS.map((user) => ({
-    userId: user.id,
-  }));
-}
-
-export default function UserProfilePage({ params }: { params: { userId: string } }) {
-  const user: User | undefined = MOCK_USERS.find((u) => u.id === params.userId);
+export default async function UserProfilePage({ params }: { params: { userId: string } }) {
+  const user: User | null = await getUser(params.userId);
 
   if (!user) {
     notFound();
   }
 
-  const userCats: Cat[] = MOCK_CATS.filter((cat) => cat.listerId === user.id);
+  const userCats: Cat[] = await getCatsByUser(user.id);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -43,7 +37,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
                <div className="flex justify-center gap-2">
-                {user.socials.twitter && (
+                {user.socials?.twitter && (
                     <Button asChild variant="outline" size="icon">
                         <Link href={user.socials.twitter} target="_blank" rel="noopener noreferrer">
                             <Twitter />
@@ -51,7 +45,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
                         </Link>
                     </Button>
                 )}
-                {user.socials.github && (
+                {user.socials?.github && (
                     <Button asChild variant="outline" size="icon">
                         <Link href={user.socials.github} target="_blank" rel="noopener noreferrer">
                             <Github />
@@ -59,7 +53,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
                         </Link>
                     </Button>
                 )}
-                {user.socials.linkedin && (
+                {user.socials?.linkedin && (
                     <Button asChild variant="outline" size="icon">
                         <Link href={user.socials.linkedin} target="_blank" rel="noopener noreferrer">
                             <Linkedin />

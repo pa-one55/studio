@@ -1,4 +1,4 @@
-import { MOCK_CATS, MOCK_USERS } from '@/lib/data';
+import { getCat, getUser } from '@/lib/firebase/firestore';
 import type { Cat, User } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -8,24 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
-export function generateStaticParams() {
-  return MOCK_CATS.map((cat) => ({
-    catId: cat.id,
-  }));
-}
-
-export default function CatProfilePage({ params }: { params: { catId: string } }) {
-  const cat: Cat | undefined = MOCK_CATS.find((c) => c.id === params.catId);
+export default async function CatProfilePage({ params }: { params: { catId: string } }) {
+  const cat: Cat | null = await getCat(params.catId);
 
   if (!cat) {
     notFound();
   }
   
-  const lister: User | undefined = MOCK_USERS.find((u) => u.id === cat.listerId);
+  const lister: User | null = await getUser(cat.listerId);
 
   if (!lister) {
-    // Or handle this case more gracefully
-    notFound();
+    // This case should ideally not happen if data integrity is maintained
+    // but it's good practice to handle it.
+    // We can show the cat profile with a generic "Unknown Lister"
   }
 
 
@@ -70,15 +65,17 @@ export default function CatProfilePage({ params }: { params: { catId: string } }
                                 <p className="text-muted-foreground">{format(new Date(cat.listedDate), "PPP")}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <UserIcon className="h-4 w-4 text-muted-foreground" />
-                             <div>
-                                <p className="font-semibold">Listed By</p>
-                                <Link href={`/profile/${lister.id}`} className="text-muted-foreground hover:text-primary underline">
-                                    {lister.name}
-                                </Link>
-                            </div>
-                        </div>
+                        {lister && (
+                          <div className="flex items-center gap-2">
+                              <UserIcon className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                  <p className="font-semibold">Listed By</p>
+                                  <Link href={`/profile/${lister.id}`} className="text-muted-foreground hover:text-primary underline">
+                                      {lister.name}
+                                  </Link>
+                              </div>
+                          </div>
+                        )}
                     </div>
                 </div>
 
