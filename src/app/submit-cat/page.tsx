@@ -8,9 +8,9 @@ export default function SubmitCatPage() {
         <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
                 <Cat className="h-10 w-10 mx-auto text-accent mb-2" />
-                <CardTitle className="text-3xl font-bold font-headline">Report a Found Cat</CardTitle>
+                <CardTitle className="text-3xl font-bold font-headline">List a New Cat</CardTitle>
                 <CardDescription>
-                    Fill out the form below to create a listing. Your submission helps reunite pets with their owners.
+                    Fill out the form below to create a listing for a stray cat you have found.
                 </CardDescription>
             </CardHeader>
             <CardContent>
