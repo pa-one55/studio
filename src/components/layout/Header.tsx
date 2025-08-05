@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -6,7 +7,11 @@ import { Logo } from '@/components/icons/Logo';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { LogOut, Menu, User as UserIcon } from 'lucide-react';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import { app } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -17,6 +22,21 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
+  const [user, setUser] = useState<User | null>(null);
+  const auth = getAuth(app);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, [auth]);
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/');
+  };
 
   const NavItems = () => (
     <>
@@ -35,6 +55,32 @@ export function Header() {
     </>
   );
 
+  const AuthButtons = () => (
+    <>
+      {user ? (
+        <>
+          <Button variant="ghost" asChild>
+            <Link href={`/profile/${user.uid}`}>
+              <UserIcon className="mr-2" /> Profile
+            </Link>
+          </Button>
+          <Button onClick={handleLogout}>
+            <LogOut className="mr-2" /> Logout
+          </Button>
+        </>
+      ) : (
+        <>
+          <Button variant="ghost" asChild>
+            <Link href="/login">Login</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/register">Register</Link>
+          </Button>
+        </>
+      )}
+    </>
+  );
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -49,12 +95,7 @@ export function Header() {
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-4">
           <div className="hidden md:flex items-center space-x-2">
-             <Button variant="ghost" asChild>
-                <Link href="/login">Login</Link>
-            </Button>
-            <Button asChild>
-                <Link href="/register">Register</Link>
-            </Button>
+            <AuthButtons />
           </div>
           <div className="md:hidden">
             <Sheet>
@@ -68,12 +109,7 @@ export function Header() {
                 <div className="grid gap-4 py-4">
                   <NavItems />
                    <div className="grid gap-2">
-                     <Button variant="ghost" asChild>
-                        <Link href="/login">Login</Link>
-                    </Button>
-                    <Button asChild>
-                        <Link href="/register">Register</Link>
-                    </Button>
+                     <AuthButtons />
                   </div>
                 </div>
               </SheetContent>

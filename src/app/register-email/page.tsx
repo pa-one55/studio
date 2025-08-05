@@ -14,11 +14,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { addUser } from '@/lib/firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export default function RegisterEmailPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const auth = getAuth(app);
+  const router = useRouter();
 
   useEffect(() => {
     getRedirectResult(auth)
@@ -38,6 +40,7 @@ export default function RegisterEmailPage() {
             title: 'Sign Up Successful',
             description: 'You have successfully signed up with Google.',
           });
+          router.push('/');
         }
       })
       .catch((error) => {
@@ -51,7 +54,7 @@ export default function RegisterEmailPage() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [auth, toast]);
+  }, [auth, toast, router]);
 
   const handleGoogleSignUp = async () => {
     setIsLoading(true);

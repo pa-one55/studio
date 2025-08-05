@@ -13,12 +13,13 @@ import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 
 export default function LoginPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-
+  const router = useRouter();
   const auth = getAuth(app);
   
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function LoginPage() {
             title: 'Login Successful',
             description: 'You have successfully logged in.',
           });
-          // Potentially redirect user to dashboard
+          router.push('/');
         }
       })
       .catch((error) => {
@@ -42,7 +43,7 @@ export default function LoginPage() {
       }).finally(() => {
         setIsLoading(false);
       });
-  }, [auth, toast]);
+  }, [auth, toast, router]);
 
 
   const handleGoogleLogin = async () => {
