@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -16,7 +17,7 @@ export interface Cat {
   name?: string;
   description: string;
   imageUrl: string;
-  location: string; // Text description of the location
+  location: string; // A Google Maps URL
   listedDate: string;
   listerId: string;
 }

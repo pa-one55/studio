@@ -1,4 +1,6 @@
+
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/check-duplicate-cats.ts';
+// This file is used to register AI flows for development.
+// For example: import '@/ai/flows/check-duplicate-cats.ts';

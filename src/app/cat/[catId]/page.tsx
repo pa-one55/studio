@@ -1,3 +1,4 @@
+
 import { getCat, getUser } from '@/lib/firebase/firestore';
 import type { Cat, User } from '@/lib/types';
 import { notFound } from 'next/navigation';
@@ -16,9 +17,6 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
   }
   
   const lister: User | null = await getUser(cat.listerId);
-
-  // Generate a Google Maps embed URL from the location description
-  const mapEmbedUrl = `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}&q=${encodeURIComponent(cat.location)}`;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -40,10 +38,6 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
               <div className="flex justify-between items-start">
                   <div>
                     <h1 className="text-4xl font-bold font-headline text-primary">{cat.name || 'Unnamed Cat'}</h1>
-                    <div className="flex items-center text-muted-foreground mt-2">
-                      <MapPin className="h-5 w-5 mr-2" />
-                      <span>{cat.location}</span>
-                    </div>
                   </div>
               </div>
             </CardHeader>
@@ -80,16 +74,11 @@ export default async function CatProfilePage({ params }: { params: { catId: stri
 
                 <div>
                      <h2 className="text-lg font-semibold mb-2 font-headline">Location</h2>
-                      <div className="aspect-video rounded-lg overflow-hidden mt-2">
-                        <iframe
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          loading="lazy"
-                          allowFullScreen
-                          src={mapEmbedUrl}>
-                        </iframe>
-                      </div>
+                      <Button asChild className="w-full">
+                        <a href={cat.location} target="_blank" rel="noopener noreferrer">
+                            <MapPin className="mr-2" /> View on Google Maps
+                        </a>
+                      </Button>
                 </div>
               </div>
             </CardContent>
