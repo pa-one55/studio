@@ -2,9 +2,11 @@
 
 import { checkDuplicateCats } from '@/ai/flows/check-duplicate-cats.ts';
 import { addCat } from '@/lib/firebase/firestore';
-import { getAuth } from 'firebase/auth'; // We'll need auth to get the listerId
+import { auth } from 'firebase-admin';
+import { getAuth } from 'firebase/auth'; 
 import { app } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 
 interface FormState {
   isDuplicate: boolean;
@@ -13,10 +15,6 @@ interface FormState {
   error?: string;
 }
 
-// NOTE: In a real server action, you'd get the current user's ID
-// from the session. For now, we'll hardcode it.
-const FAKE_USER_ID = 'user-1'; // Replace with real auth logic
-
 export async function handleSubmitCat(
   input: {
     photoDataUri: string;
@@ -24,9 +22,19 @@ export async function handleSubmitCat(
     locationDescription: string;
     name?: string;
     imageUrl: string;
+    listerId: string;
   },
   force: boolean = false
 ): Promise<FormState> {
+  if (!input.listerId) {
+     return {
+      isDuplicate: false,
+      duplicateExplanation: '',
+      success: false,
+      error: 'You must be logged in to list a cat.',
+    };
+  }
+
   if (!force) {
     try {
       const duplicateResult = await checkDuplicateCats({
@@ -53,7 +61,7 @@ export async function handleSubmitCat(
       description: input.catDescription,
       imageUrl: input.imageUrl, // In a real app, you'd upload the photo and get a URL
       location: input.locationDescription,
-      listerId: FAKE_USER_ID, // Use the authenticated user's ID
+      listerId: input.listerId,
       listedDate: new Date(),
     });
 

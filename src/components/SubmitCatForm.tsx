@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,6 +13,9 @@ import { handleSubmitCat } from '@/app/submit-cat/actions';
 import Image from 'next/image';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import { app } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -52,9 +55,31 @@ export function SubmitCatForm() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [duplicateCheckResult, setDuplicateCheckResult] = useState<{isDuplicate: boolean; duplicateExplanation: string} | null>(null);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
-  
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const { toast } = useToast();
-  
+  const router = useRouter();
+  const auth = getAuth(app);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        router.push('/login');
+         toast({
+          variant: "destructive",
+          title: 'Unauthorized',
+          description: "Please log in to list a cat.",
+        });
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [auth, router, toast]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -76,6 +101,11 @@ export function SubmitCatForm() {
   };
 
   const processSubmit = async (values: FormValues, force: boolean = false) => {
+    if (!user) {
+       toast({ variant: "destructive", title: 'Submission Failed', description: "You must be logged in to submit." });
+       return;
+    }
+
     setIsSubmitting(true);
     try {
       const photoDataUri = await fileToDataUri(values.photo[0]);
@@ -86,7 +116,8 @@ export function SubmitCatForm() {
         catDescription: values.catDescription,
         locationDescription: values.locationDescription,
         name: values.name,
-        imageUrl: "https://placehold.co/600x400.png" // Placeholder
+        imageUrl: "https://placehold.co/600x400.png", // Placeholder
+        listerId: user.uid,
       }, force);
 
       if (result.isDuplicate && !force) {
@@ -118,6 +149,15 @@ export function SubmitCatForm() {
     const values = form.getValues();
     await processSubmit(values, true);
   };
+  
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   return (
     <>
@@ -204,7 +244,7 @@ export function SubmitCatForm() {
             )}
           />
 
-          <Button type="submit" disabled={isSubmitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+          <Button type="submit" disabled={isSubmitting || !user} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Check for Duplicates & Submit
           </Button>
