@@ -4,13 +4,20 @@ import type { Cat, User } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { MapPin, ExternalLink, Calendar, User as UserIcon } from 'lucide-react';
+import { MapPin, Calendar, User as UserIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
-export default async function CatProfilePage({ params }: { params: { catId: string } }) {
-  const cat: Cat | null = await getCat(params.catId);
+type CatProfilePageProps = {
+  params: { catId: string };
+};
+
+export default async function CatProfilePage(props: CatProfilePageProps) {
+  // The params object must be awaited before accessing its properties.
+  const { catId } = await Promise.resolve(props.params);
+  
+  const cat: Cat | null = await getCat(catId);
 
   if (!cat) {
     notFound();
