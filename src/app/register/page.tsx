@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, getRedirectResult, UserCredential } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast'; // used to show small pop-up notifications to the user (like "Sign up successful" or "An error occurred").
 import { useEffect, useState } from 'react';
@@ -18,7 +18,6 @@ import { addUser, getUser } from '@/lib/firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  console.log("RegisterPage k code me aaya hai");
   const { toast } = useToast(); //  used to show small pop-up notifications to the user
   const [isLoading, setIsLoading] = useState(true); // reack ka bakchodi
   const auth = getAuth(app); // gets the Firebase Authentication service instance.
@@ -26,13 +25,11 @@ export default function RegisterPage() {
 
   // iske niche ka console.log sirf browser me dikhega
   useEffect(() => {
-    console.log("BROWSER LOG: useEffect started. Setting up onAuthStateChanged listener...");
-    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log("BROWSER LOG: onAuthStateChanged triggered. User:", firebaseUser);
 
       if (firebaseUser) {
-        // A user is logged in.
+        // A user is logged in. This could be from a fresh redirect or an existing session.
         setIsLoading(true); // Show loader while we check the database.
         console.log("BROWSER LOG: User detected with UID:", firebaseUser.uid);
         
@@ -81,6 +78,22 @@ export default function RegisterPage() {
       }
     });
 
+    // Handle the redirect result from Google specifically.
+    getRedirectResult(auth).then((result) => {
+      if (result) {
+        // The onAuthStateChanged listener above will handle the user creation and redirect.
+        console.log("BROWSER LOG: Google redirect result processed.");
+      }
+    }).catch((error) => {
+      console.error("BROWSER LOG: Google sign-up redirect error:", error);
+      toast({
+        variant: "destructive",
+        title: 'Sign Up Failed',
+        description: 'Could not sign up with Google. Please try again.',
+      });
+      setIsLoading(false);
+    });
+
     // Cleanup function: remove the listener when the component unmounts.
     return () => {
       console.log("BROWSER LOG: Cleaning up onAuthStateChanged listener.");
@@ -94,7 +107,7 @@ export default function RegisterPage() {
     setIsLoading(true); // Show the loading spinner
     const provider = new GoogleAuthProvider();
     // This will redirect the user to Google's sign-in page.
-    // After they sign in, they will be redirected back here, and the onAuthStateChanged listener will fire.
+    // After they sign in, they will be redirected back here, and the logic in useEffect will fire.
     await signInWithRedirect(auth, provider);
   };
 

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/icons/Logo';
 import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, getRedirectResult, UserCredential } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -40,27 +40,43 @@ export default function LoginPage() {
         password: '',
     }
   });
-console.log("LoginPage: Form initialized with default values:", form.getValues());
-  // This useEffect hook reliably checks the user's authentication state when the page loads.
-  useEffect(() => {
-    console.log("BROWSER LOG: LoginPage useEffect started. Setting up onAuthStateChanged listener...");
-    
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      console.log("BROWSER LOG: LoginPage onAuthStateChanged triggered. User:", firebaseUser);
 
+  // This useEffect hook reliably checks the user's authentication state on load AND handles the redirect result from Google.
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        // A user is already logged in.
-        console.log("BROWSER LOG: User is already logged in. Redirecting to homepage...");
-        toast({ title: 'Already Logged In', description: 'Redirecting you to the homepage.' });
+        // A user is already logged in, redirect them.
+        console.log("BROWSER LOG: onAuthStateChanged - User is logged in. Redirecting...");
         router.push('/');
       } else {
-        // No user is logged in. Show the login page.
-        console.log("BROWSER LOG: No user is signed in. Login page will be displayed.");
-        setIsAuthLoading(false);
+        // No user is logged in. Check for a redirect result.
+        console.log("BROWSER LOG: onAuthStateChanged - No user signed in. Checking for redirect result...");
+        getRedirectResult(auth)
+          .then((result: UserCredential | null) => {
+            if (result) {
+              // This was a successful redirect login.
+              console.log("BROWSER LOG: getRedirectResult - Success! User:", result.user);
+              toast({ title: 'Login Successful', description: 'Welcome back!' });
+              // The onAuthStateChanged listener will handle the redirect to '/'
+            } else {
+              // This was a normal page load, not a redirect.
+              console.log("BROWSER LOG: getRedirectResult - No redirect result found.");
+            }
+          })
+          .catch((error) => {
+            console.error("BROWSER LOG: getRedirectResult - Error:", error);
+            toast({
+              variant: "destructive",
+              title: 'Login Failed',
+              description: 'Could not log in with Google. Please try again.',
+            });
+          })
+          .finally(() => {
+            setIsAuthLoading(false);
+          });
       }
     });
 
-    // Cleanup function: remove the listener when the component unmounts.
     return () => {
       console.log("BROWSER LOG: Cleaning up LoginPage onAuthStateChanged listener.");
       unsubscribe();
@@ -73,7 +89,7 @@ console.log("LoginPage: Form initialized with default values:", form.getValues()
     setIsSubmitting(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
-    // After redirect, the onAuthStateChanged listener will handle the result.
+    // After redirect, the logic in useEffect will handle the result.
   };
   
   const onEmailSubmit = async (values: FormValues) => {
