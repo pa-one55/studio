@@ -72,26 +72,27 @@ export default function RegisterPage() {
         }
 
       } else {
-        // No user is logged in. Show the registration page.
-        console.log("BROWSER LOG: No user is signed in. Ready for registration attempt.");
-        setIsLoading(false);
+        // No user is logged in. Check for a redirect result from Google.
+        getRedirectResult(auth).then((result) => {
+          if (result) {
+            // The onAuthStateChanged listener above will handle the user creation and redirect.
+            console.log("BROWSER LOG: Google redirect result processed.");
+            setIsLoading(true); // Keep loading as onAuthStateChanged will re-trigger with user
+          } else {
+            // This was a normal page load, not a redirect.
+             console.log("BROWSER LOG: No user is signed in. Ready for registration attempt.");
+             setIsLoading(false);
+          }
+        }).catch((error) => {
+          console.error("BROWSER LOG: Google sign-up redirect error:", error);
+          toast({
+            variant: "destructive",
+            title: 'Sign Up Failed',
+            description: 'Could not sign up with Google. Please try again.',
+          });
+          setIsLoading(false);
+        });
       }
-    });
-
-    // Handle the redirect result from Google specifically.
-    getRedirectResult(auth).then((result) => {
-      if (result) {
-        // The onAuthStateChanged listener above will handle the user creation and redirect.
-        console.log("BROWSER LOG: Google redirect result processed.");
-      }
-    }).catch((error) => {
-      console.error("BROWSER LOG: Google sign-up redirect error:", error);
-      toast({
-        variant: "destructive",
-        title: 'Sign Up Failed',
-        description: 'Could not sign up with Google. Please try again.',
-      });
-      setIsLoading(false);
     });
 
     // Cleanup function: remove the listener when the component unmounts.
