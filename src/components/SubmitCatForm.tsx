@@ -16,7 +16,7 @@ import { Loader2, UploadCloud, MapPin, CheckCircle } from 'lucide-react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { uploadCatPhoto } from '@/lib/firebase/storage';
 
 const formSchema = z.object({
