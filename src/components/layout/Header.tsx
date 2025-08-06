@@ -70,11 +70,8 @@ export function Header() {
         </>
       ) : (
         <>
-          <Button variant="ghost" asChild>
-            <Link href="/login">Login</Link>
-          </Button>
           <Button asChild>
-            <Link href="/register">Register</Link>
+            <Link href="/login">Sign In</Link>
           </Button>
         </>
       )}

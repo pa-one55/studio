@@ -1,123 +1,112 @@
 
 'use client';
 
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/icons/Logo';
-import { Separator } from '@/components/ui/separator';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signInWithEmailAndPassword, getRedirectResult, UserCredential } from 'firebase/auth';
+import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, getRedirectResult, UserCredential } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-
-const formSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email' }),
-  password: z.string().min(1, { message: 'Password is required' }),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { addUser, getUser } from '@/lib/firebase/firestore';
 
 export default function LoginPage() {
   console.log("LoginPage: Component rendering...");
   const { toast } = useToast();
-  const [isAuthLoading, setIsAuthLoading] = useState(true); // For the initial auth state check
-  const [isSubmitting, setIsSubmitting] = useState(false); // For form submissions
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const auth = getAuth(app);
   
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-        email: '',
-        password: '',
-    }
-  });
-
-  // This useEffect hook reliably checks the user's authentication state on load AND handles the redirect result from Google.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("BROWSER LOG: onAuthStateChanged triggered. User:", firebaseUser);
+
       if (firebaseUser) {
-        // A user is already logged in, redirect them.
-        console.log("BROWSER LOG: onAuthStateChanged - User is logged in. Redirecting...");
-        router.push('/');
-      } else {
-        // No user is logged in. Check for a redirect result.
-        console.log("BROWSER LOG: onAuthStateChanged - No user signed in. Checking for redirect result...");
-        getRedirectResult(auth)
-          .then((result: UserCredential | null) => {
-            if (result) {
-              // This was a successful redirect login.
-              console.log("BROWSER LOG: getRedirectResult - Success! User:", result.user);
-              toast({ title: 'Login Successful', description: 'Welcome back!' });
-              // The onAuthStateChanged listener will handle the redirect to '/'
-            } else {
-              // This was a normal page load, not a redirect.
-              console.log("BROWSER LOG: getRedirectResult - No redirect result found.");
-            }
-          })
-          .catch((error) => {
-            console.error("BROWSER LOG: getRedirectResult - Error:", error);
-            toast({
-              variant: "destructive",
-              title: 'Login Failed',
-              description: 'Could not log in with Google. Please try again.',
+        // A user is logged in. This could be from a fresh redirect or an existing session.
+        setIsLoading(true); // Show loader while we check the database.
+        console.log("BROWSER LOG: User detected with UID:", firebaseUser.uid);
+        
+        try {
+          const existingUser = await getUser(firebaseUser.uid);
+
+          if (!existingUser) {
+            // This is a new user, create their document in Firestore.
+            console.log("BROWSER LOG: New user. Creating Firestore document...");
+            await addUser({
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'Anonymous User',
+              email: firebaseUser.email || '',
+              imageUrl: firebaseUser.photoURL || 'https://placehold.co/128x128.png',
+              friends: [],
+              socials: {},
             });
-          })
-          .finally(() => {
-            setIsAuthLoading(false);
+            console.log("BROWSER LOG: User document created successfully.");
+            toast({
+              title: 'Sign Up Successful',
+              description: 'Welcome! Your account has been created.',
+            });
+          } else {
+            // This user already exists in Firestore.
+            console.log("BROWSER LOG: Existing user found. Not creating a new document.");
+             toast({
+              title: 'Welcome Back!',
+              description: 'You are already signed in.',
+            });
+          }
+          
+          // Redirect to the homepage.
+          console.log("BROWSER LOG: Redirecting to homepage...");
+          router.push('/');
+
+        } catch (error) {
+          console.error("BROWSER LOG: Error during database operation:", error);
+          toast({ variant: "destructive", title: 'Error', description: 'Failed to set up your account.' });
+          setIsLoading(false); // Stop loading on error
+        }
+
+      } else {
+        // No user is logged in. Check for a redirect result from Google.
+        getRedirectResult(auth).then((result) => {
+          if (result) {
+            // The onAuthStateChanged listener above will handle the user creation and redirect.
+            console.log("BROWSER LOG: Google redirect result processed.");
+            setIsLoading(true); // Keep loading as onAuthStateChanged will re-trigger with user
+          } else {
+            // This was a normal page load, not a redirect.
+             console.log("BROWSER LOG: No user is signed in. Ready for registration attempt.");
+             setIsLoading(false);
+          }
+        }).catch((error) => {
+          console.error("BROWSER LOG: Google sign-up redirect error:", error);
+          toast({
+            variant: "destructive",
+            title: 'Sign In Failed',
+            description: 'Could not sign in with Google. Please try again.',
           });
+          setIsLoading(false);
+        });
       }
     });
 
+    // Cleanup function: remove the listener when the component unmounts.
     return () => {
-      console.log("BROWSER LOG: Cleaning up LoginPage onAuthStateChanged listener.");
+      console.log("BROWSER LOG: Cleaning up onAuthStateChanged listener.");
       unsubscribe();
-    }
+    };
   }, [auth, router, toast]);
-
 
   const handleGoogleLogin = async () => {
     console.log("BROWSER LOG: handleGoogleLogin called.");
-    setIsSubmitting(true);
+    setIsLoading(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
     // After redirect, the logic in useEffect will handle the result.
   };
-  
-  const onEmailSubmit = async (values: FormValues) => {
-    console.log("BROWSER LOG: onEmailSubmit called with values:", values);
-    setIsSubmitting(true);
-    try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      console.log("BROWSER LOG: Email login successful.");
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome back!',
-      });
-      // The onAuthStateChanged listener will handle the redirect.
-    } catch (error: any) {
-      console.error("BROWSER LOG: Email login error:", error);
-      toast({
-        variant: "destructive",
-        title: 'Login Failed',
-        description: error.code === 'auth/invalid-credential' 
-            ? 'Invalid email or password. Please try again.'
-            : 'An unexpected error occurred.',
-      });
-       setIsSubmitting(false);
-    }
-  };
 
-  // Show a global loading spinner only for the initial auth check.
-  if (isAuthLoading) {
+  // Show a global loading spinner.
+  if (isLoading) {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -131,68 +120,14 @@ export default function LoginPage() {
       <Card className="mx-auto max-w-sm w-full">
         <CardHeader className="text-center">
           <Logo className="h-10 w-10 mx-auto text-primary mb-2" />
-          <CardTitle className="text-2xl font-headline">Login</CardTitle>
-          <CardDescription>Welcome back! Sign in to your account.</CardDescription>
+          <CardTitle className="text-2xl font-headline">Get Started</CardTitle>
+          <CardDescription>Continue with Google to sign in or create an account.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
-             <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isSubmitting}>
-               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 64.5C308.6 92.6 279.2 80 248 80c-73.2 0-133.2 59.9-133.2 133.2S174.8 386.4 248 386.4c77.9 0 119.5-56.2 123.4-86.4H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>}
-              Login with Google
-            </Button>
-
-            <div className="flex items-center space-x-2">
-              <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">OR LOGIN WITH EMAIL</span>
-              <Separator className="flex-1" />
-            </div>
-
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onEmailSubmit)} className="space-y-4">
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                    <Input type="email" placeholder="m@example.com" {...field} disabled={isSubmitting} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                             <FormItem>
-                                <div className="flex items-center">
-                                    <FormLabel>Password</FormLabel>
-                                    <Link href="#" className="ml-auto inline-block text-sm underline">
-                                    Forgot your password?
-                                    </Link>
-                                </div>
-                                <FormControl>
-                                    <Input type="password" {...field} disabled={isSubmitting}/>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Login
-                    </Button>
-                </form>
-            </Form>
-          </div>
-          <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="underline">
-              Sign up
-            </Link>
-          </div>
+          <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
+           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 64.5C308.6 92.6 279.2 80 248 80c-73.2 0-133.2 59.9-133.2 133.2S174.8 386.4 248 386.4c77.9 0 119.5-56.2 123.4-86.4H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path></svg>}
+            Continue with Google
+          </Button>
         </CardContent>
       </Card>
     </div>
