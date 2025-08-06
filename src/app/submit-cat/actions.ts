@@ -14,11 +14,15 @@ export async function handleSubmitCat(
     catDescription: string;
     location: string;
     name?: string;
-    imageUrl: string;
+    imageUrl: string; // This will now be a base64 Data URI
     listerId: string;
   }
 ): Promise<FormState> {
-  console.log("handleSubmitCat action started. Input:", input);
+  console.log("handleSubmitCat action started. Input:", {
+    ...input,
+    imageUrl: input.imageUrl.substring(0, 50) + '...', // Log only a snippet of the Data URI
+  });
+
 
   if (!input.listerId) {
      console.error("handleSubmitCat: Error - No listerId provided.");
@@ -26,6 +30,14 @@ export async function handleSubmitCat(
       success: false,
       error: 'You must be logged in to list a cat.',
     };
+  }
+  
+  if (!input.imageUrl.startsWith('data:image')) {
+    console.error("handleSubmitCat: Error - Invalid image Data URI.");
+    return {
+      success: false,
+      error: 'The provided image data was not valid.',
+    }
   }
 
   try {

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,14 +17,15 @@ import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { uploadCatPhoto } from '@/lib/firebase/storage';
+
+const MAX_FILE_SIZE_MB = 1;
 
 const formSchema = z.object({
   name: z.string().optional(),
   photo: z.any().refine(
     (files) => files?.length > 0, 'A photo of the cat is required.'
   ).refine(
-    (files) => files?.[0]?.size <= 5_000_000, `Max file size is 5MB.`
+    (files) => files?.[0]?.size <= MAX_FILE_SIZE_MB * 1024 * 1024, `Max file size is ${MAX_FILE_SIZE_MB}MB.`
   ).refine(
     (files) => ["image/jpeg", "image/png", "image/webp"].includes(files?.[0]?.type),
     "Only .jpg, .png and .webp formats are supported."
@@ -42,7 +43,6 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function SubmitCatForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -116,19 +116,19 @@ export function SubmitCatForm() {
        toast({ variant: "destructive", title: 'Submission Failed', description: "You must be logged in to submit." });
        return;
     }
+    
+    if (!photoPreview) {
+       toast({ variant: "destructive", title: 'Submission Failed', description: "Please select a photo." });
+       return;
+    }
 
     setIsSubmitting(true);
     try {
-      setSubmitStatus('Uploading photo...');
-      const photoFile = values.photo[0];
-      const imageUrl = await uploadCatPhoto(photoFile, user.uid);
-      
-      setSubmitStatus('Saving listing...');
       const result = await handleSubmitCat({
         catDescription: values.catDescription,
         location: values.location,
         name: values.name,
-        imageUrl: imageUrl, 
+        imageUrl: photoPreview, // Send the Base64 Data URI directly
         listerId: user.uid,
       });
 
@@ -148,7 +148,6 @@ export function SubmitCatForm() {
       toast({ variant: "destructive", title: 'An error occurred', description: errorMessage });
     } finally {
       setIsSubmitting(false);
-      setSubmitStatus('');
     }
   }
   
@@ -179,10 +178,11 @@ export function SubmitCatForm() {
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                     <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
                                     <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                    <p className="text-xs text-muted-foreground">PNG, JPG or WEBP (MAX. 5MB)</p>
+                                    <p className="text-xs text-muted-foreground">PNG, JPG or WEBP (MAX. {MAX_FILE_SIZE_MB}MB)</p>
                                 </div>
                             )}
-                             <Input id="dropzone-file" type="file" className="hidden" 
+                             <Input id="dropzone-file" type="file" className="hidden"
+                                accept="image/png, image/jpeg, image/webp"
                                 onChange={(e) => {
                                   field.onChange(e.target.files);
                                   handlePhotoChange(e);
@@ -266,7 +266,7 @@ export function SubmitCatForm() {
 
           <Button type="submit" disabled={isSubmitting || !user} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {isSubmitting ? submitStatus : 'Submit Cat Listing'}
+            {isSubmitting ? 'Submitting...' : 'Submit Cat Listing'}
           </Button>
         </form>
       </Form>
