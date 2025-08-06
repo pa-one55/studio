@@ -1,3 +1,4 @@
+
 import { getUser, getCatsByUser } from '@/lib/firebase/firestore';
 import type { User, Cat } from '@/lib/types';
 import { notFound } from 'next/navigation';
@@ -9,7 +10,9 @@ import { CatCard } from '@/components/CatCard';
 import { Twitter, Github, Linkedin, UserPlus } from 'lucide-react';
 
 export default async function UserProfilePage({ params }: { params: { userId: string } }) {
-  const user: User | null = await getUser(params.userId);
+  // The params object must be awaited before accessing its properties.
+  const { userId } = await Promise.resolve(params);
+  const user: User | null = await getUser(userId);
 
   if (!user) {
     notFound();
