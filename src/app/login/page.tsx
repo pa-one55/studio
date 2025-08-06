@@ -19,7 +19,6 @@ export default function LoginPage() {
   const auth = getAuth(app);
 
   useEffect(() => {
-    // This effect runs once on component mount to handle all auth states.
     const handleAuth = async () => {
       try {
         const result = await getRedirectResult(auth);
