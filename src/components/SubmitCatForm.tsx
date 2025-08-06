@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -120,9 +120,7 @@ export function SubmitCatForm() {
     setIsSubmitting(true);
     try {
       setSubmitStatus('Uploading photo...');
- console.log("onSubmit: Starting photo upload process..."); // Added log before getting photoFile
       const photoFile = values.photo[0];
-      console.log("onSubmit: Photo file to upload:", photoFile); // Added log after getting photoFile
       const imageUrl = await uploadCatPhoto(photoFile, user.uid);
       
       setSubmitStatus('Saving listing...');
@@ -132,8 +130,7 @@ export function SubmitCatForm() {
         name: values.name,
         imageUrl: imageUrl, 
         listerId: user.uid,
-      }); // Added log after calling uploadCatPhoto
-      console.log("onSubmit: Uploaded image URL received:", imageUrl); // Added log after calling uploadCatPhoto and before calling handleSubmitCat
+      });
 
       if (result.success) {
         toast({
