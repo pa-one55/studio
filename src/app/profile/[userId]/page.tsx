@@ -6,14 +6,14 @@ import { getAuth, onAuthStateChanged, User as AuthUser } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { getUser, getCatsByUser, getFriends } from '@/lib/firebase/firestore';
 import type { User, Cat } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CatCard } from '@/components/CatCard';
 import { Twitter, Github, Linkedin, UserPlus, UserMinus, Check, Loader2, Users } from 'lucide-react';
-import { addFriend, removeFriend } from './actions';
+import { addFriend, removeFriend } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -30,6 +30,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 
   const auth = getAuth(app);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -68,21 +69,27 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const handleFriendAction = async () => {
     if (!currentUser) {
       toast({ variant: 'destructive', title: 'You must be logged in.' });
+      router.push('/login');
       return;
     }
     setIsUpdatingFriend(true);
     try {
       if (isFriend) {
-        await removeFriend(userId);
+        await removeFriend(currentUser.uid, userId);
         toast({ title: 'Friend Removed' });
+        setFriends(friends.filter(friend => friend.id !== currentUser.uid));
         setIsFriend(false);
       } else {
-        await addFriend(userId);
+        await addFriend(currentUser.uid, userId);
         toast({ title: 'Friend Added!' });
+        const currentUserProfile = await getUser(currentUser.uid);
+        if (currentUserProfile) {
+            setFriends([...friends, currentUserProfile]);
+        }
         setIsFriend(true);
       }
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Something went wrong.' });
+      toast({ variant: 'destructive', title: 'Something went wrong.', description: 'Could not update friend list.' });
     } finally {
       setIsUpdatingFriend(false);
     }
