@@ -39,7 +39,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   }, [auth]);
 
   useEffect(() => {
-    // This function runs when the component loads or when dependencies change.
     async function fetchData(userId: string) {
       setIsLoading(true);
       try {
@@ -59,7 +58,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         setFriends(friendList);
 
         if (currentUser) {
-          // Check if the currently viewed profile is in the current user's friend list
           const currentUserProfile = await getUser(currentUser.uid);
           setIsFriend(currentUserProfile?.friends?.includes(userId) ?? false);
         }
@@ -70,7 +68,8 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         setIsLoading(false);
       }
     }
-    // We get the userId from params and only run the fetch logic if it exists.
+    
+    // The ONLY place we access params.userId
     const { userId } = params;
     if (userId) {
         fetchData(userId);
@@ -78,7 +77,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   }, [params, currentUser, toast]);
 
   const handleFriendAction = async () => {
-    const { userId } = params;
+    const { userId } = params; // Access it here, inside the async function
     if (!currentUser) {
       toast({ variant: 'destructive', title: 'You must be logged in.' });
       router.push('/login');
@@ -89,17 +88,10 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       if (isFriend) {
         await removeFriend(currentUser.uid, userId);
         toast({ title: 'Friend Removed' });
-        // Optimistically update the UI
-        setFriends(friends.filter(friend => friend.id !== currentUser.uid));
         setIsFriend(false);
       } else {
         await addFriend(currentUser.uid, userId);
         toast({ title: 'Friend Added!' });
-        // Optimistically update the UI
-        const currentUserProfile = await getUser(currentUser.uid);
-        if (currentUserProfile) {
-            setFriends([...friends, currentUserProfile]);
-        }
         setIsFriend(true);
       }
        // Re-fetch friends to ensure consistency
@@ -129,7 +121,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     return notFound();
   }
 
-  const isOwnProfile = currentUser?.uid === params.userId;
+  const isOwnProfile = currentUser?.uid === user.id;
 
   return (
     <div className="container mx-auto px-4 py-8">
