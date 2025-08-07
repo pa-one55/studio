@@ -28,7 +28,7 @@ export default async function UserProfilePage({ params }: { params: { userId: st
             <CardHeader className="items-center text-center">
               <div className="relative w-32 h-32">
                  <Image
-                    src={user.imageUrl}
+                    src={user.imageUrl || 'https://placehold.co/128x128.png'}
                     alt={user.name}
                     width={128}
                     height={128}
