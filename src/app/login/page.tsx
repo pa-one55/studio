@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -122,7 +123,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <Logo className="h-10 w-10 mx-auto text-primary mb-2" />
           <CardTitle className="text-2xl font-headline">Get Started</CardTitle>
-          <CardDescription>Sign up or sign in to continue.</CardDescription>
+          <CardDescription>Sign in to continue. New users will be registered automatically.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
             <Button onClick={handleGooglePopupLogin} disabled={isPopupLoading || isRedirectLoading}>
