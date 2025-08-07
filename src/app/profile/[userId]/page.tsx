@@ -27,13 +27,18 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingFriend, setIsUpdatingFriend] = useState(false);
   
-  // This is the key change: we get the userId from params here, inside the component body,
-  // but we ONLY use it inside the useEffect hook below.
-  const { userId } = params;
+  const [userId, setUserId] = useState('');
 
   const auth = getAuth(app);
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    // This correctly awaits the params promise
+    Promise.resolve(params).then(p => {
+      setUserId(p.userId);
+    });
+  }, [params]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -172,7 +177,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
               </div>
               {isOwnProfile && (
                 <Button asChild variant="outline">
-                  <Link href="/coming-soon">
+                  <Link href="/profile/edit">
                     <Edit className="mr-2" /> Edit Profile
                   </Link>
                 </Button>
@@ -237,5 +242,3 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     </div>
   );
 }
-
-    

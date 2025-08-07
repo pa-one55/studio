@@ -26,7 +26,15 @@ export async function getUser(userId: string): Promise<User | null> {
 
 export async function addUser(user: User): Promise<void> {
     const userDocRef = doc(db, 'users', user.id);
-    await setDoc(userDocRef, user);
+    await setDoc(userDocRef, user, { merge: true });
+}
+
+export async function updateUser(userId: string, data: Partial<User>): Promise<void> {
+    const userDocRef = doc(db, 'users', userId);
+    // Note: This logic assumes you handle image upload elsewhere and pass the URL here.
+    // If imageUrl is a base64 string, it should be uploaded to a service like Firebase Storage first.
+    // For this app, we're simplifying and storing the Data URI directly for the profile pic, similar to the cat pic.
+    await updateDoc(userDocRef, data);
 }
 
 export async function addFriend(currentUserId: string, friendId: string): Promise<void> {
@@ -74,14 +82,29 @@ export async function getFriends(friendIds: string[]): Promise<User[]> {
         return [];
     }
     const friends: User[] = [];
-    // Firestore 'in' query is limited to 10 items. For larger lists, batching is needed.
-    // For this app, fetching one-by-one is acceptable.
-    for (const id of friendIds) {
-        const user = await getUser(id);
-        if (user) {
-            friends.push(user);
-        }
+    // Firestore 'in' query has a limit of 30 items in the array.
+    // We chunk the friendIds array to handle cases with more than 30 friends.
+    const chunks: string[][] = [];
+    for (let i = 0; i < friendIds.length; i += 30) {
+        chunks.push(friendIds.slice(i, i + 30));
     }
+
+    for (const chunk of chunks) {
+         const q = query(collection(db, 'users'), where('id', 'in', chunk));
+         const friendsSnapshot = await getDocs(q);
+         friendsSnapshot.forEach(doc => {
+            const data = doc.data();
+            friends.push({
+                id: doc.id,
+                name: data.name,
+                email: data.email,
+                imageUrl: data.imageUrl,
+                socials: data.socials || {},
+                friends: data.friends || [],
+            });
+         });
+    }
+
     return friends;
 }
 
