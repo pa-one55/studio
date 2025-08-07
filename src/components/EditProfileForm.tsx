@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { updateUserAction } from '@/app/profile/edit/actions';
 import Image from 'next/image';
 import { Loader2, UploadCloud, User } from 'lucide-react';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User as AuthUser } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { getUser } from '@/lib/firebase/firestore';
@@ -36,7 +36,7 @@ type FormValues = z.infer<typeof formSchema>;
 export function EditProfileForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const { toast } = useToast();
@@ -56,9 +56,9 @@ export function EditProfileForm() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        setUser(currentUser);
         const userProfile = await getUser(currentUser.uid);
         if (userProfile) {
-          setUser(currentUser as any);
           form.reset({
             name: userProfile.name,
             instagram: userProfile.socials?.instagram || '',
@@ -250,7 +250,7 @@ export function EditProfileForm() {
             </div>
         </div>
         
-        <Button type="submit" disabled={isSubmitting || !user} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+        <Button type="submit" disabled={isSubmitting || !user || !form.formState.isDirty} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
         </Button>
