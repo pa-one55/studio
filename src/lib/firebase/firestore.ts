@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/firebase';
 import type { Cat, User } from '@/lib/types';
-import { collection, getDocs, doc, getDoc, addDoc, setDoc, query, where, Timestamp, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, setDoc, query, where, Timestamp, updateDoc, arrayUnion, arrayRemove, writeBatch } from 'firebase/firestore';
 
 // --- User Functions ---
 
@@ -30,17 +30,43 @@ export async function addUser(user: User): Promise<void> {
 }
 
 export async function addFriend(currentUserId: string, friendId: string): Promise<void> {
-    const userDocRef = doc(db, 'users', currentUserId);
-    await updateDoc(userDocRef, {
+    if (currentUserId === friendId) {
+        throw new Error("You cannot add yourself as a friend.");
+    }
+    const currentUserDocRef = doc(db, 'users', currentUserId);
+    const friendDocRef = doc(db, 'users', friendId);
+
+    const batch = writeBatch(db);
+
+    batch.update(currentUserDocRef, {
         friends: arrayUnion(friendId)
     });
+
+    batch.update(friendDocRef, {
+        friends: arrayUnion(currentUserId)
+    });
+
+    await batch.commit();
 }
 
-export async function removeFriend(currentUserId: string, friendId: string): Promise<void> {
-    const userDocRef = doc(db, 'users', currentUserId);
-    await updateDoc(userDocRef, {
+export async function removeFriend(currentUserId: string, friendId:string): Promise<void> {
+    if (currentUserId === friendId) {
+        throw new Error("Invalid operation.");
+    }
+    const currentUserDocRef = doc(db, 'users', currentUserId);
+    const friendDocRef = doc(db, 'users', friendId);
+
+    const batch = writeBatch(db);
+
+    batch.update(currentUserDocRef, {
         friends: arrayRemove(friendId)
     });
+    
+    batch.update(friendDocRef, {
+        friends: arrayRemove(currentUserId)
+    });
+
+    await batch.commit();
 }
 
 export async function getFriends(friendIds: string[]): Promise<User[]> {
@@ -48,8 +74,8 @@ export async function getFriends(friendIds: string[]): Promise<User[]> {
         return [];
     }
     const friends: User[] = [];
-    // Firestore 'in' query is limited to 10 items. We fetch them one by one.
-    // For larger friend lists, batching would be required.
+    // Firestore 'in' query is limited to 10 items. For larger lists, batching is needed.
+    // For this app, fetching one-by-one is acceptable.
     for (const id of friendIds) {
         const user = await getUser(id);
         if (user) {

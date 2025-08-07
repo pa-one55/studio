@@ -12,14 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CatCard } from '@/components/CatCard';
-import { Twitter, Github, Linkedin, UserPlus, UserMinus, Check, Loader2, Users } from 'lucide-react';
+import { Twitter, Github, Linkedin, UserPlus, Check, Loader2, Users } from 'lucide-react';
 import { addFriend, removeFriend } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 export default function UserProfilePage({ params }: { params: { userId: string } }) {
-  const { userId } = params;
   const [user, setUser] = useState<User | null>(null);
   const [userCats, setUserCats] = useState<Cat[]>([]);
   const [friends, setFriends] = useState<User[]>([]);
@@ -40,33 +39,46 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   }, [auth]);
 
   useEffect(() => {
-    async function fetchData() {
+    // This function runs when the component loads or when dependencies change.
+    async function fetchData(userId: string) {
       setIsLoading(true);
-      const userProfile = await getUser(userId);
-      if (!userProfile) {
-        notFound();
-        return;
-      }
-      setUser(userProfile);
-      
-      const [cats, friendList] = await Promise.all([
-        getCatsByUser(userId),
-        getFriends(userProfile.friends || [])
-      ]);
+      try {
+        const userProfile = await getUser(userId);
+        if (!userProfile) {
+          notFound();
+          return;
+        }
+        setUser(userProfile);
+        
+        const [cats, friendList] = await Promise.all([
+          getCatsByUser(userId),
+          getFriends(userProfile.friends || [])
+        ]);
 
-      setUserCats(cats);
-      setFriends(friendList);
+        setUserCats(cats);
+        setFriends(friendList);
 
-      if (currentUser) {
-        const currentUserProfile = await getUser(currentUser.uid);
-        setIsFriend(currentUserProfile?.friends?.includes(userId) ?? false);
+        if (currentUser) {
+          // Check if the currently viewed profile is in the current user's friend list
+          const currentUserProfile = await getUser(currentUser.uid);
+          setIsFriend(currentUserProfile?.friends?.includes(userId) ?? false);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to load profile data.' });
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
-    fetchData();
-  }, [userId, currentUser]);
+    // We get the userId from params and only run the fetch logic if it exists.
+    const { userId } = params;
+    if (userId) {
+        fetchData(userId);
+    }
+  }, [params, currentUser, toast]);
 
   const handleFriendAction = async () => {
+    const { userId } = params;
     if (!currentUser) {
       toast({ variant: 'destructive', title: 'You must be logged in.' });
       router.push('/login');
@@ -77,19 +89,29 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       if (isFriend) {
         await removeFriend(currentUser.uid, userId);
         toast({ title: 'Friend Removed' });
+        // Optimistically update the UI
         setFriends(friends.filter(friend => friend.id !== currentUser.uid));
         setIsFriend(false);
       } else {
         await addFriend(currentUser.uid, userId);
         toast({ title: 'Friend Added!' });
+        // Optimistically update the UI
         const currentUserProfile = await getUser(currentUser.uid);
         if (currentUserProfile) {
             setFriends([...friends, currentUserProfile]);
         }
         setIsFriend(true);
       }
+       // Re-fetch friends to ensure consistency
+       const userProfile = await getUser(userId);
+       if(userProfile) {
+         const friendList = await getFriends(userProfile.friends || []);
+         setFriends(friendList);
+       }
     } catch (error) {
       toast({ variant: 'destructive', title: 'Something went wrong.', description: 'Could not update friend list.' });
+      // Revert optimistic update on error
+      setIsFriend(!isFriend);
     } finally {
       setIsUpdatingFriend(false);
     }
@@ -107,7 +129,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     return notFound();
   }
 
-  const isOwnProfile = currentUser?.uid === userId;
+  const isOwnProfile = currentUser?.uid === params.userId;
 
   return (
     <div className="container mx-auto px-4 py-8">
