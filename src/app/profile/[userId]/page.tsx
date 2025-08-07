@@ -26,6 +26,10 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const [isFriend, setIsFriend] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingFriend, setIsUpdatingFriend] = useState(false);
+  
+  // This is the key change: we get the userId from params here, inside the component body,
+  // but we ONLY use it inside the useEffect hook below.
+  const { userId } = params;
 
   const auth = getAuth(app);
   const { toast } = useToast();
@@ -39,7 +43,9 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   }, [auth]);
 
   useEffect(() => {
-    async function fetchData(userId: string) {
+    async function fetchData() {
+      if (!userId) return; // Don't run if userId isn't available yet.
+      
       setIsLoading(true);
       try {
         const userProfile = await getUser(userId);
@@ -69,15 +75,11 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       }
     }
     
-    // The ONLY place we access params.userId
-    const { userId } = params;
-    if (userId) {
-        fetchData(userId);
-    }
-  }, [params, currentUser, toast]);
+    fetchData();
+    // We depend on `userId` and `currentUser` to refetch data when they change.
+  }, [userId, currentUser, toast]);
 
   const handleFriendAction = async () => {
-    const { userId } = params; // Access it here, inside the async function
     if (!currentUser) {
       toast({ variant: 'destructive', title: 'You must be logged in.' });
       router.push('/login');
@@ -235,3 +237,5 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     </div>
   );
 }
+
+    
