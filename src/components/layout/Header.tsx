@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons/Logo';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { LogOut, Menu, User as UserIcon } from 'lucide-react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -103,6 +105,14 @@ export function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right">
+                <SheetHeader>
+                  <VisuallyHidden>
+                    <SheetTitle>Main Menu</SheetTitle>
+                    <SheetDescription>
+                      Navigation links and authentication options for the Feline Finder application.
+                    </SheetDescription>
+                  </VisuallyHidden>
+                </SheetHeader>
                 <div className="grid gap-4 py-4">
                   <NavItems />
                    <div className="grid gap-2">
