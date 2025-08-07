@@ -7,7 +7,7 @@ import { Logo } from '@/components/icons/Logo';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
-import { LogOut, Menu, User as UserIcon } from 'lucide-react';
+import { LogOut, Menu, User as UserIcon, Wrench } from 'lucide-react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { app } from '@/lib/firebase';
@@ -18,6 +18,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/submit-cat', label: 'Submit Cat' },
+  { href: '/coming-soon', label: 'Features'},
   { href: '/about', label: 'About' },
   { href: '/donate', label: 'Donate' },
 ];
@@ -114,7 +115,9 @@ export function Header() {
                   </VisuallyHidden>
                 </SheetHeader>
                 <div className="grid gap-4 py-4">
-                  <NavItems />
+                  <nav className="grid gap-2">
+                     <NavItems />
+                  </nav>
                    <div className="grid gap-2">
                      <AuthButtons />
                   </div>

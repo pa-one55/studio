@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CatCard } from '@/components/CatCard';
-import { Twitter, Github, Linkedin, UserPlus, Check, Loader2, Users } from 'lucide-react';
+import { Twitter, Github, Linkedin, UserPlus, Check, Loader2, Users, Edit } from 'lucide-react';
 import { addFriend, removeFriend } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -168,6 +168,13 @@ export default function UserProfilePage({ params }: { params: { userId: string }
                   </Button>
                 )}
               </div>
+              {isOwnProfile && (
+                <Button asChild variant="outline">
+                  <Link href="/coming-soon">
+                    <Edit className="mr-2" /> Edit Profile
+                  </Link>
+                </Button>
+              )}
               {!isOwnProfile && currentUser && (
                 <Button onClick={handleFriendAction} disabled={isUpdatingFriend} variant={isFriend ? 'secondary' : 'default'}>
                   {isUpdatingFriend ? (

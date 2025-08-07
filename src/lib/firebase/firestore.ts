@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/firebase';
 import type { Cat, User } from '@/lib/types';
-import { collection, getDocs, doc, getDoc, addDoc, setDoc, query, where, Timestamp, updateDoc, arrayUnion, arrayRemove, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, setDoc, query, where, Timestamp, updateDoc, arrayUnion, arrayRemove, writeBatch, deleteDoc } from 'firebase/firestore';
 
 // --- User Functions ---
 
@@ -157,4 +157,9 @@ export async function addCat(cat: Omit<Cat, 'id' | 'listedDate'> & { listedDate:
     listedDate: Timestamp.fromDate(cat.listedDate),
   });
   return newDocRef.id;
+}
+
+export async function deleteCat(catId: string): Promise<void> {
+    const catDocRef = doc(db, 'cats', catId);
+    await deleteDoc(catDocRef);
 }

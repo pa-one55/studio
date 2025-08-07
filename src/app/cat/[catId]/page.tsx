@@ -8,13 +8,13 @@ import { MapPin, Calendar, User as UserIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { CatProfileActions } from '@/components/CatProfileActions';
 
 type CatProfilePageProps = {
   params: { catId: string };
 };
 
 export default async function CatProfilePage(props: CatProfilePageProps) {
-  // The params object must be awaited before accessing its properties.
   const { catId } = await Promise.resolve(props.params);
   
   const cat: Cat | null = await getCat(catId);
@@ -47,6 +47,7 @@ export default async function CatProfilePage(props: CatProfilePageProps) {
                   <div>
                     <h1 className="text-4xl font-bold font-headline text-primary">{cat.name || 'Unnamed Cat'}</h1>
                   </div>
+                  <CatProfileActions cat={cat} />
               </div>
             </CardHeader>
             <CardContent>
