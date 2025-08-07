@@ -38,6 +38,7 @@ export function EditProfileForm() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [isFormReady, setIsFormReady] = useState(false);
 
   const { toast } = useToast();
   const router = useRouter();
@@ -66,6 +67,7 @@ export function EditProfileForm() {
             customUrl: userProfile.socials?.custom?.url || '',
           });
           setPhotoPreview(userProfile.imageUrl);
+          setIsFormReady(true);
         } else {
             router.push('/');
         }
@@ -250,7 +252,7 @@ export function EditProfileForm() {
             </div>
         </div>
         
-        <Button type="submit" disabled={isSubmitting || !user || !form.formState.isDirty} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+        <Button type="submit" disabled={isSubmitting || !isFormReady || !form.formState.isDirty} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
         </Button>
