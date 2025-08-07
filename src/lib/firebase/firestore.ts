@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/firebase';
 import type { Cat, User } from '@/lib/types';
-import { collection, getDocs, doc, getDoc, addDoc, setDoc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, setDoc, query, where, Timestamp, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 // --- User Functions ---
 
@@ -27,6 +27,36 @@ export async function getUser(userId: string): Promise<User | null> {
 export async function addUser(user: User): Promise<void> {
     const userDocRef = doc(db, 'users', user.id);
     await setDoc(userDocRef, user);
+}
+
+export async function addFriend(currentUserId: string, friendId: string): Promise<void> {
+    const userDocRef = doc(db, 'users', currentUserId);
+    await updateDoc(userDocRef, {
+        friends: arrayUnion(friendId)
+    });
+}
+
+export async function removeFriend(currentUserId: string, friendId: string): Promise<void> {
+    const userDocRef = doc(db, 'users', currentUserId);
+    await updateDoc(userDocRef, {
+        friends: arrayRemove(friendId)
+    });
+}
+
+export async function getFriends(friendIds: string[]): Promise<User[]> {
+    if (friendIds.length === 0) {
+        return [];
+    }
+    const friends: User[] = [];
+    // Firestore 'in' query is limited to 10 items. We fetch them one by one.
+    // For larger friend lists, batching would be required.
+    for (const id of friendIds) {
+        const user = await getUser(id);
+        if (user) {
+            friends.push(user);
+        }
+    }
+    return friends;
 }
 
 
