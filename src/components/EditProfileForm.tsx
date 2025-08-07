@@ -16,15 +16,19 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { getUser } from '@/lib/firebase/firestore';
+import { Separator } from './ui/separator';
 
 const MAX_FILE_SIZE_MB = 1;
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   photo: z.any().optional(),
-  twitter: z.string().url().optional().or(z.literal('')),
-  github: z.string().url().optional().or(z.literal('')),
-  linkedin: z.string().url().optional().or(z.literal('')),
+  instagram: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+  customPlatform: z.string().optional(),
+  customUrl: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+}).refine(data => (data.customPlatform && data.customUrl) || (!data.customPlatform && !data.customUrl), {
+    message: "Both custom platform name and URL must be provided.",
+    path: ["customPlatform"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -43,9 +47,9 @@ export function EditProfileForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      twitter: '',
-      github: '',
-      linkedin: '',
+      instagram: '',
+      customPlatform: '',
+      customUrl: '',
     },
   });
 
@@ -57,13 +61,13 @@ export function EditProfileForm() {
           setUser(currentUser as any);
           form.reset({
             name: userProfile.name,
-            twitter: userProfile.socials?.twitter || '',
-            github: userProfile.socials?.github || '',
-            linkedin: userProfile.socials?.linkedin || '',
+            instagram: userProfile.socials?.instagram || '',
+            customPlatform: userProfile.socials?.custom?.platform || '',
+            customUrl: userProfile.socials?.custom?.url || '',
           });
           setPhotoPreview(userProfile.imageUrl);
         } else {
-            router.push('/'); // Should not happen for a logged in user
+            router.push('/');
         }
       } else {
         router.push('/login');
@@ -82,10 +86,9 @@ export function EditProfileForm() {
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const validation = formSchema.shape.photo.safeParse([file]);
-      if (!validation.success) {
-        form.setError('photo', { message: validation.error.errors[0].message });
-        return;
+      if(file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+          form.setError('photo', { message: `Max file size is ${MAX_FILE_SIZE_MB}MB.` });
+          return;
       }
 
       const reader = new FileReader();
@@ -107,11 +110,13 @@ export function EditProfileForm() {
       const result = await updateUserAction({
         userId: user.uid,
         name: values.name,
-        imageUrl: photoPreview, // Will be the new Data URI or the old URL
+        imageUrl: photoPreview,
         socials: {
-          twitter: values.twitter,
-          github: values.github,
-          linkedin: values.linkedin,
+          instagram: values.instagram,
+          custom: {
+            platform: values.customPlatform || '',
+            url: values.customUrl || '',
+          },
         },
       });
 
@@ -121,7 +126,7 @@ export function EditProfileForm() {
           description: 'Your profile has been successfully updated.',
         });
         router.push(`/profile/${user.uid}`);
-        router.refresh(); // Tell Next.js to refresh the page data
+        router.refresh();
       } else if (result.error) {
         toast({ variant: 'destructive', title: 'Update Failed', description: result.error });
       }
@@ -192,45 +197,58 @@ export function EditProfileForm() {
           )}
         />
         
+        <Separator />
+        
+        <h3 className="text-lg font-medium">Social Links</h3>
+
         <FormField
           control={form.control}
-          name="twitter"
+          name="instagram"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Twitter URL</FormLabel>
+              <FormLabel>Instagram URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://twitter.com/yourhandle" {...field} disabled={isSubmitting} />
+                <Input placeholder="https://instagram.com/yourhandle" {...field} disabled={isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="github"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>GitHub URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://github.com/yourhandle" {...field} disabled={isSubmitting} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="linkedin"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>LinkedIn URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://linkedin.com/in/yourhandle" {...field} disabled={isSubmitting} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
+        <div>
+            <FormLabel>Custom Social Link</FormLabel>
+            <FormDescription className="pb-2">
+                Add one more link to any other social profile.
+            </FormDescription>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="customPlatform"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">Platform Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Facebook" {...field} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="customUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                       <FormLabel className="text-xs text-muted-foreground">URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://facebook.com/yourhandle" {...field} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
+        </div>
         
         <Button type="submit" disabled={isSubmitting || !user} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

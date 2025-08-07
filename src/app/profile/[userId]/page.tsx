@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CatCard } from '@/components/CatCard';
-import { Twitter, Github, Linkedin, UserPlus, Check, Loader2, Users, Edit } from 'lucide-react';
+import { Instagram, Link as LinkIcon, UserPlus, Check, Loader2, Users, Edit } from 'lucide-react';
 import { addFriend, removeFriend } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,7 +34,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const router = useRouter();
 
   useEffect(() => {
-    // This correctly awaits the params promise
     Promise.resolve(params).then(p => {
       setUserId(p.userId);
     });
@@ -49,7 +48,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 
   useEffect(() => {
     async function fetchData() {
-      if (!userId) return; // Don't run if userId isn't available yet.
+      if (!userId) return;
       
       setIsLoading(true);
       try {
@@ -81,7 +80,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     }
     
     fetchData();
-    // We depend on `userId` and `currentUser` to refetch data when they change.
   }, [userId, currentUser, toast]);
 
   const handleFriendAction = async () => {
@@ -101,7 +99,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         toast({ title: 'Friend Added!' });
         setIsFriend(true);
       }
-       // Re-fetch friends to ensure consistency
        const userProfile = await getUser(userId);
        if(userProfile) {
          const friendList = await getFriends(userProfile.friends || []);
@@ -109,7 +106,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
        }
     } catch (error) {
       toast({ variant: 'destructive', title: 'Something went wrong.', description: 'Could not update friend list.' });
-      // Revert optimistic update on error
       setIsFriend(!isFriend);
     } finally {
       setIsUpdatingFriend(false);
@@ -150,27 +146,19 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="flex justify-center gap-2">
-                {user.socials?.twitter && (
+                {user.socials?.instagram && (
                   <Button asChild variant="outline" size="icon">
-                    <Link href={user.socials.twitter} target="_blank" rel="noopener noreferrer">
-                      <Twitter />
-                      <span className="sr-only">Twitter</span>
+                    <Link href={user.socials.instagram} target="_blank" rel="noopener noreferrer">
+                      <Instagram />
+                      <span className="sr-only">Instagram</span>
                     </Link>
                   </Button>
                 )}
-                {user.socials?.github && (
+                {user.socials?.custom?.url && (
                   <Button asChild variant="outline" size="icon">
-                    <Link href={user.socials.github} target="_blank" rel="noopener noreferrer">
-                      <Github />
-                      <span className="sr-only">GitHub</span>
-                    </Link>
-                  </Button>
-                )}
-                {user.socials?.linkedin && (
-                  <Button asChild variant="outline" size="icon">
-                    <Link href={user.socials.linkedin} target="_blank" rel="noopener noreferrer">
-                      <Linkedin />
-                      <span className="sr-only">LinkedIn</span>
+                    <Link href={user.socials.custom.url} target="_blank" rel="noopener noreferrer" title={user.socials.custom.platform}>
+                      <LinkIcon />
+                      <span className="sr-only">{user.socials.custom.platform}</span>
                     </Link>
                   </Button>
                 )}

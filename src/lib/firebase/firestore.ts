@@ -16,7 +16,7 @@ export async function getUser(userId: string): Promise<User | null> {
             name: data.name,
             email: data.email,
             imageUrl: data.imageUrl,
-            socials: data.socials || {},
+            socials: data.socials || { instagram: '', custom: { platform: '', url: ''} },
             friends: data.friends || [],
         };
     } else {

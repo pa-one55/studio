@@ -21,16 +21,17 @@ export async function updateUserAction(
   try {
     const userData: Partial<User> = {
       name: input.name,
-      socials: input.socials,
+      socials: {
+        instagram: input.socials?.instagram || '',
+        custom: {
+            platform: input.socials?.custom?.platform || '',
+            url: input.socials?.custom?.url || '',
+        }
+      },
     };
     
-    // Only include the imageUrl if it's a new base64 upload
-    // If it's the old URL, we don't need to re-upload it.
     if (input.imageUrl && input.imageUrl.startsWith('data:image')) {
       userData.imageUrl = input.imageUrl;
-    } else if (input.imageUrl) {
-      // It's the old URL, so no change needed unless we are storing it
-      // For this action, we assume if it's not a data URI, it's unchanged.
     }
 
     await updateUser(input.userId, userData);

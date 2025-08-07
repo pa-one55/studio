@@ -1,13 +1,17 @@
 
+export interface SocialLink {
+  platform: string;
+  url: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   imageUrl: string;
   socials?: {
-    twitter?: string;
-    github?: string;
-    linkedin?: string;
+    instagram?: string;
+    custom?: SocialLink; // For one extra user-defined social link
   };
   friends?: string[]; // Array of user IDs
 }
