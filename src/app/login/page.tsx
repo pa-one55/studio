@@ -1,10 +1,9 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons/Logo';
-import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, getRedirectResult, User as FirebaseUser } from 'firebase/auth';
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -18,74 +17,70 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = getAuth(app);
 
+  // This effect checks if the user is already logged in from a previous session.
   useEffect(() => {
-    const handleAuth = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        
-        if (result?.user) {
-          // User just signed in via redirect.
-          console.log("BROWSER LOG: Google redirect result processed for user:", result.user.uid);
-          const firebaseUser = result.user;
-          const existingUser = await getUser(firebaseUser.uid);
-
-          if (!existingUser) {
-            console.log("BROWSER LOG: New user. Creating Firestore document...");
-            await addUser({
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || 'Anonymous User',
-              email: firebaseUser.email || '',
-              imageUrl: firebaseUser.photoURL || 'https://placehold.co/128x128.png',
-              friends: [],
-              socials: {},
-            });
-            toast({
-              title: 'Account Created',
-              description: 'Welcome! Your account has been successfully created.',
-            });
-          } else {
-             console.log("BROWSER LOG: Existing user found.");
-             toast({
-              title: 'Welcome Back!',
-              description: 'You are now signed in.',
-            });
-          }
-          console.log("BROWSER LOG: Redirecting to homepage...");
-          router.push('/');
-
-        } else {
-          // No redirect result, check if user is already signed in from a previous session.
-          const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-            if (firebaseUser) {
-              console.log("BROWSER LOG: User is already signed in from a previous session.");
-              router.push('/');
-            } else {
-              console.log("BROWSER LOG: No user is signed in. Ready for login attempt.");
-              setIsLoading(false); // No user, stop loading and show the login button.
-            }
-          });
-          // Cleanup the listener if the component unmounts.
-          return () => unsubscribe();
-        }
-      } catch (error: any) {
-        console.error("BROWSER LOG: Authentication error:", error);
-        toast({
-          variant: "destructive",
-          title: 'Sign In Failed',
-          description: error.message || 'Could not sign in with Google. Please try again.',
-        });
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // If user is already logged in, redirect them to the homepage.
+        console.log("BROWSER LOG: User is already signed in. Redirecting...");
+        router.push('/');
+      } else {
+        // No user is signed in. Stop loading and show the login button.
+        console.log("BROWSER LOG: No user is signed in. Ready for login attempt.");
         setIsLoading(false);
       }
-    };
+    });
 
-    handleAuth();
-  }, [auth, router, toast]);
+    // Cleanup the listener when the component unmounts.
+    return () => unsubscribe();
+  }, [auth, router]);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
-    // After this redirect, the useEffect hook will handle the result on page load.
+    try {
+      // Use signInWithPopup instead of signInWithRedirect
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+
+      console.log("BROWSER LOG: Google popup result processed for user:", firebaseUser.uid);
+      
+      const existingUser = await getUser(firebaseUser.uid);
+
+      if (!existingUser) {
+        console.log("BROWSER LOG: New user. Creating Firestore document...");
+        await addUser({
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Anonymous User',
+          email: firebaseUser.email || '',
+          imageUrl: firebaseUser.photoURL || 'https://placehold.co/128x128.png',
+          friends: [],
+          socials: {},
+        });
+        toast({
+          title: 'Account Created',
+          description: 'Welcome! Your account has been successfully created.',
+        });
+      } else {
+         console.log("BROWSER LOG: Existing user found.");
+         toast({
+          title: 'Welcome Back!',
+          description: 'You are now signed in.',
+        });
+      }
+      
+      console.log("BROWSER LOG: Redirecting to homepage...");
+      router.push('/');
+
+    } catch (error: any) {
+      console.error("BROWSER LOG: Authentication error:", error);
+      toast({
+        variant: "destructive",
+        title: 'Sign In Failed',
+        description: error.message || 'Could not sign in with Google. Please try again.',
+      });
+      setIsLoading(false);
+    }
   };
   
   if (isLoading) {
